@@ -1,7 +1,41 @@
 #ifndef _CLINET_H_
 #define _CLINET_H_
 
+#include <sys/socket.h>
+using namespace std;
+
+/**
+   Client class using TCP
+*/
 class Client {
+
+public:
+  // constructor
+  Client();
+  // connect to a server
+  bool connectServer(string address, int port);
+  // send data to server
+  bool sendData(string data);
+  // receive data ?
+  string receiveData(int)
+
+private:
+  int sock;
+  string address;
+  int port;
+  struct sockaddr_in server;
 };
 
+
+
 #endif
+
+
+
+
+
+
+
+
+
+
