@@ -2,8 +2,8 @@
 #define _CLINET_H_
 
 #include <sys/socket.h>
-
-
+#include <arpa/inet.h>
+#include <string>
 using namespace std;
 
 /**
@@ -19,12 +19,12 @@ public:
   // send data to server
   bool sendData(string data);
   // receive data ?
-  string receiveData(int)
-
+  string receiveData(int);
 private:
   // socket file description
   int sockfd;
   struct sockaddr_in server;
+
 };
 
 

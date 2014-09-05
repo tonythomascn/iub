@@ -1,11 +1,18 @@
 #include "Client.h"
 #include "utils.h"
+#include <iostream> 
+#include <string.h>
+using namespace std;
 
 Client::Client() {
-  sockfdb = -1; // set as no connection
+  sockfd = -1; // set as no connection
 }
 
-bool Client::connectServer(int address, int port) {
+
+/**
+   connect to a given address and port
+*/
+bool Client::connectServer(string address, int port) {
   // create socket
   if (sockfd == -1) {
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -16,7 +23,7 @@ bool Client::connectServer(int address, int port) {
   }
   
   // setup server address
-  server = setupAddr(addresse, port);
+  server = setupAddr(address, port);
 
   // connect to server
   int status = connect(sockfd, (struct sockaddr *)&server, sizeof(server));
