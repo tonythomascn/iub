@@ -1,5 +1,7 @@
 #include <iostream>
+#include <vector>
 
+using namespace std;
 
 
 /**
@@ -30,6 +32,8 @@ int main(int argc, char * argv[]){
   parseArgs(&nc_args, argc, argv);
   // take action based on the args
   
+  vector<int> vt;
+  vt.pu
   
   return 0;
 }
