@@ -2,6 +2,8 @@
 #define _CLINET_H_
 
 #include <sys/socket.h>
+
+
 using namespace std;
 
 /**
@@ -20,9 +22,8 @@ public:
   string receiveData(int)
 
 private:
-  int sock;
-  string address;
-  int port;
+  // socket file description
+  int sockfd;
   struct sockaddr_in server;
 };
 
