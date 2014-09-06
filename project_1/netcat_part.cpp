@@ -1,5 +1,8 @@
 #include <iostream>
+#include <stdlib.h>
 #include "Client.h"
+
+#include "Server.h"
 
 using namespace std;
 
@@ -31,11 +34,22 @@ int main(int argc, char * argv[]){
   // initialize the arguments
   // parseArgs(&nc_args, argc, argv);
   // take action based on the args
+  string addr = "127.0.0.1";
+  int port = 6767;
   
-  Client c;
-  string addr = "149.165.180.113";
-  c.connectServer(addr, 80);
-  c.sendData("GET / HTTP/1.1\r\n\r\n");
-  cout << c.receiveData(1024) << endl;
+  if (argc != 2) {
+    exit(1);
+  }
+
+  if (string(argv[1]) == "0") {
+    Server sv = Server(addr, port);
+    int sock = sv.acceptClient();
+    sv.processClient(sock);
+  }
+  else {
+    Client c;
+    c.connectServer(addr, 6767);
+    c.sendData("Hello World!\n");
+  }
   return 0;
 }
