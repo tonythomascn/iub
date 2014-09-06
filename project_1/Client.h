@@ -4,6 +4,7 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <string>
+#include <unistd.h>
 using namespace std;
 
 /**
@@ -18,8 +19,9 @@ public:
   bool connectServer(string address, int port);
   // send data to server
   bool sendData(string data);
-  // receive data ?
+  // receive data 
   string receiveData(int);
+  ~Client();
 private:
   // socket file description
   int sockfd;
