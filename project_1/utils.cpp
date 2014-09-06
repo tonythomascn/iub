@@ -2,11 +2,8 @@
 
 
 /**
-   @args: 
-      addr - string
-      port - int
-   @return
-      resolved addr_port - struct sockaddr_in
+   use `addr` and `port` to construct
+   `addr_port` with type `struct sockaddr_in`
 */
 struct sockaddr_in setupAddr(string addr, int port) {
   struct sockaddr_in addr_port;
