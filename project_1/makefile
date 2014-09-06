@@ -1,4 +1,4 @@
-OBJS = netcat_part.o Client.o utils.o
+OBJS = netcat_part.o Client.o utils.o Server.o
 cc = g++
 DEBUG = -g
 CFLAGS = -Wall -c $(DEBUG)
@@ -9,7 +9,9 @@ netcat_part : $(OBJS)
 netcat_part.o : netcat_part.cpp Client.h
 	$(cc) $(CFLAGS) netcat_part.cpp Client.h
 Client.o : Client.h Client.cpp utils.h 
-	$(cc) $(CFLAGS) Client.h Client.cpp utils.h utils.cpp
+	$(cc) $(CFLAGS) Client.h Client.cpp utils.h 
+Server.o : Server.h Server.cpp utils.h
+	$(cc) $(CFLAGS) Server.h Server.cpp utils.h
 utils.o : utils.cpp utils.h
 	$(cc) $(CFLAGS) utils.h utils.cpp
 
@@ -20,5 +22,5 @@ clean :
 	rm -f netcat_part
 
 tar :
-	tar -cvf netcat_part.tar *.h *.cpp README
+	tar -cvf netcat_part.tar *.h *.cpp README.md makefile
 
