@@ -64,6 +64,14 @@ string Client::receiveData(int dataSize = 1024) {
 
 
 
+Client::~Client() {
+  close(sockfd);
+}
+
+
+
+
+
 
 
 
