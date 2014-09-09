@@ -38,7 +38,11 @@ Server::Server(struct sockaddr_in serverAddr, string ofile) {
   outfile = ofile;
   
   // bind the sock
-  bind(serverSock, (struct sockaddr *)&serverAddr, sizeof(struct sockaddr_in));
+  int status = bind(serverSock, (struct sockaddr *)&serverAddr, sizeof(struct sockaddr_in));
+  if (status < 0) {
+    cerr << "Failed to bind the port, check you input!\n";
+    exit(1);
+  }
   printMSG("Binding to the socket ... OK!\n");
   // set listen to up to 1 queued connection
   if ( listen(serverSock, MAX_QUE) < 0 ) {
@@ -76,6 +80,7 @@ bool Server::processClient(int sock) {
   }  
   close(sock);
   fclose(fp);
+  printMSG("Receiving data ... OK!\n");
   return true;
 }
 
