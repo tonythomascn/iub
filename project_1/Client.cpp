@@ -73,6 +73,37 @@ bool Client::sendData(string data) {
   return true;
 }
 
+bool Client::sendData(string fileName, int offset, int n_bytes) {
+  FILE *fp = fopen(fileName.c_str(), "rb");
+  if (fp == NULL) {
+    cerr << "Failed to open file." << endl;
+    return false;
+  }
+  if (offset > 0) offset--;
+  fseek(fp, offset, SEEK_SET);
+  char buffer[BUF_SIZE];
+  int t;
+  while ( (t = fread(buffer, 1, BUF_SIZE, fp)) && (n_bytes > 0)  ) {
+    if (t <= n_bytes) {
+      n_bytes -= t;
+    }
+    else {
+      t = n_bytes;
+      n_bytes = 0;
+    }
+    // now send data ...
+    int status = send(sockfd, buffer, t, 0);
+    if (status < 0) {
+      cerr << "Failed to send data." << endl;
+      fclose(fp);
+      return false;
+    }
+  }
+  fclose(fp);
+  printMSG("Sending data ... OK!\n");
+  return true;
+}
+
 
 /**
    receive data from the connected host

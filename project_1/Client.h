@@ -7,7 +7,9 @@
 #include <netdb.h>
 #include <string>
 #include <unistd.h>
+#include "common.h"
 using namespace std;
+
 
 /**
    Client class using TCP
@@ -22,6 +24,7 @@ public:
   bool connectServer(struct sockaddr_in);
   // send data to server
   bool sendData(string data);
+  bool sendData(string fileName, int offset, int n_bytes);
   // receive data 
   string receiveData(int);
   ~Client();
