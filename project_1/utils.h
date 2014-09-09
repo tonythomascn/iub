@@ -39,6 +39,7 @@ void usage(FILE * file);
 
 
 struct sockaddr_in setupAddr(string addr, int port);
+struct sockaddr_in setupAddr(struct sockaddr_in ska);
 
 // default output stream = std::cerr
 bool printMSG(string msg);

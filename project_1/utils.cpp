@@ -19,6 +19,11 @@ struct sockaddr_in setupAddr(string addr, int port) {
 } 
 
 
+struct sockaddr_in setupAddr(struct sockaddr_in ska) {
+  return ska;
+}
+
+
 bool printMSG(string msg) {
   if (! VERBOSE) 
     return false;
