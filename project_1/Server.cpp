@@ -3,6 +3,7 @@
 #include <iostream>
 #include <fstream>
 #include <cstring>
+#include <stdlib.h>
 
 using namespace std;
 
@@ -27,7 +28,8 @@ Server::Server(struct sockaddr_in serverAddr, string ofile) {
   serverSock = socket(AF_INET, SOCK_STREAM, 0);
   // if failed to open
   if (serverSock < 0) {
-    printMSG("Failed to open the socket!\n");
+    cerr << "Failed to open the socket!\n";
+    exit(1);
   }
   printMSG("Opening the socket ... OK!\n");
   // setup the address structure
@@ -40,7 +42,8 @@ Server::Server(struct sockaddr_in serverAddr, string ofile) {
   printMSG("Binding to the socket ... OK!\n");
   // set listen to up to 1 queued connection
   if ( listen(serverSock, MAX_QUE) < 0 ) {
-    printMSG( "Failed to listen on server socket.\n" );
+    cerr << "Failed to listen on server socket.\n";
+    exit(1);
   }
   printMSG("Listening on the server socket ... OK!\n");
 }
@@ -67,8 +70,9 @@ int Server::acceptClient() {
 bool Server::processClient(int sock) {
   char buffer[BUF_SIZE];
   FILE *fp = fopen(outfile.c_str(), "wb");
-  while( read(sock, buffer, BUF_SIZE) ) {
-    fwrite(buffer, sizeof(buffer), 1, fp);
+  int t;
+  while((t =  read(sock, buffer, BUF_SIZE)) ) {
+    fwrite(buffer, t, 1, fp);
   }  
   close(sock);
   fclose(fp);
