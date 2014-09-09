@@ -66,13 +66,12 @@ int Server::acceptClient() {
 
 bool Server::processClient(int sock) {
   char buffer[BUF_SIZE];
-  ofstream ofile;
-  ofile.open(outfile.c_str());
+  FILE *fp = fopen(outfile.c_str(), "wb");
   while( read(sock, buffer, BUF_SIZE) ) {
-    ofile << string(buffer);
+    fwrite(buffer, sizeof(buffer), 1, fp);
   }  
   close(sock);
-  ofile.close();
+  fclose(fp);
   return true;
 }
 

@@ -7,7 +7,7 @@
 #include <unistd.h>
 using namespace std;
 
-const int BUF_SIZE = 1024;
+const int BUF_SIZE = 8;
 const int MAX_QUE = 1;
 
 /**
