@@ -15,6 +15,29 @@ bool VERBOSE = false;
  **/
 
 
+bool processArgs(nc_args_t args) {
+  // nc_args_t args;
+  // set VERBOSE
+  if (args.verbose == 1) {
+    VERBOSE = true;
+  }
+  // if listen mode
+  if (args.listen == 1) {
+    Server s = Server(args.destaddr, args.filename);
+    int sock = s.acceptClient();
+    return s.processClient(sock);
+  }
+  // if message_mode
+  if (args.message_mode == 1) {
+    Client c;
+    c.connectServer(args.destaddr);
+    c.sendData(args.message);
+    return true;
+  }
+  // now, not message_mode
+  return false;
+}
+
 
 
 
@@ -43,6 +66,7 @@ int main(int argc, char * argv[]){
   // }
   nc_args_t nc_args;
   parse_args(&nc_args, argc, argv);
+  processArgs(nc_args);
   return 0;
 }
 
