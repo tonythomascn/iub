@@ -5,9 +5,9 @@
 #include <arpa/inet.h>
 #include <string>
 #include <unistd.h>
+#include "common.h"
 using namespace std;
 
-const int BUF_SIZE = 8;
 const int MAX_QUE = 1;
 
 /**
