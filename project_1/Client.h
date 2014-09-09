@@ -1,8 +1,10 @@
 #ifndef _CLINET_H_
 #define _CLINET_H_
 
+#include <sys/types.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <netdb.h>
 #include <string>
 #include <unistd.h>
 using namespace std;
@@ -17,6 +19,7 @@ public:
   Client();
   // connect to a server
   bool connectServer(string address, int port);
+  bool connectServer(struct sockadd_in)
   // send data to server
   bool sendData(string data);
   // receive data 
