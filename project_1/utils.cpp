@@ -64,7 +64,7 @@ void parse_args(nc_args_t * nc_args, int argc, char * argv[]){
   int ch;
   struct hostent * hostinfo;
   //set defaults
-  nc_args->n_bytes = 0;
+  nc_args->n_bytes = MAX_SIZE;
   nc_args->offset = 0;
   nc_args->listen = 0;
   nc_args->port = 6767;
