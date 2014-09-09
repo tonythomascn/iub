@@ -5,6 +5,9 @@
 #include "Server.h"
 #include "utils.h"
 
+// finish this project first, then handle the errors.
+
+
 
 using namespace std;
 
@@ -35,7 +38,10 @@ bool processArgs(nc_args_t args) {
     return true;
   }
   // now, not message_mode
-  return false;
+  Client c;
+  c.connectServer(args.destaddr);
+  c.sendData(args.filename, args.offset, args.n_bytes);
+  return true;
 }
 
 
