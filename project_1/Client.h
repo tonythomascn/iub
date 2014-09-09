@@ -19,7 +19,7 @@ public:
   Client();
   // connect to a server
   bool connectServer(string address, int port);
-  bool connectServer(struct sockadd_in)
+  bool connectServer(struct sockaddr_in);
   // send data to server
   bool sendData(string data);
   // receive data 

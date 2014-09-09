@@ -13,26 +13,26 @@ Client::Client() {
    connect to a given address and port
 */
 bool Client::connectServer(string address, int port) {
-  // create socket
-  if (sockfd == -1) {
-    sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (sockfd == -1) {
-      cerr << "Failed to create socket" << endl;
-      return false;
-    }
-  }
+  // // create socket
+  // if (sockfd == -1) {
+  //   sockfd = socket(AF_INET, SOCK_STREAM, 0);
+  //   if (sockfd == -1) {
+  //     cerr << "Failed to create socket" << endl;
+  //     return false;
+  //   }
+  // }
   
   // setup server address
   server = setupAddr(address, port);
-
-  // connect to server
-  int status = connect(sockfd, (struct sockaddr *)&server, sizeof(server));
-  if (status < 0) {
-    cerr << "Connect failed." << endl;
-    return false;
-  }
-  printMSG("Connecting to server ... OK!\n");
-  return true;
+  return connectServer(server);
+  // // connect to server
+  // int status = connect(sockfd, (struct sockaddr *)&server, sizeof(server));
+  // if (status < 0) {
+  //   cerr << "Connect failed." << endl;
+  //   return false;
+  // }
+  // printMSG("Connecting to server ... OK!\n");
+  // return true;
 }
 
 bool Client::connectServer(struct sockaddr_in server) {
@@ -69,7 +69,7 @@ bool Client::sendData(string data) {
     cerr << "Failed to send data." << endl;
     return false;
   }
-  printMSG("Sending data ... OK!\n")
+  printMSG("Sending data ... OK!\n");
   return true;
 }
 
