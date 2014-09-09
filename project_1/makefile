@@ -6,7 +6,7 @@ LFLAGS = -Wall $(DEBUG)
 
 netcat_part : $(OBJS)
 	$(cc) $(LFAGS) $(OBJS) -o netcat_part
-netcat_part.o : netcat_part.cpp Client.h
+netcat_part.o : netcat_part.cpp Client.h Server.h
 	$(cc) $(CFLAGS) netcat_part.cpp Client.h
 Client.o : Client.h Client.cpp utils.h 
 	$(cc) $(CFLAGS) Client.h Client.cpp utils.h 
