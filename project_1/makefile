@@ -6,14 +6,14 @@ LFLAGS = -Wall $(DEBUG)
 
 netcat_part : $(OBJS)
 	$(cc) $(LFAGS) $(OBJS) -o netcat_part
-netcat_part.o : netcat_part.cpp Client.h
-	$(cc) $(CFLAGS) netcat_part.cpp Client.h
-Client.o : Client.h Client.cpp utils.h 
-	$(cc) $(CFLAGS) Client.h Client.cpp utils.h 
-Server.o : Server.h Server.cpp utils.h
-	$(cc) $(CFLAGS) Server.h Server.cpp utils.h
-utils.o : utils.cpp utils.h
-	$(cc) $(CFLAGS) utils.h utils.cpp
+netcat_part.o : netcat_part.cpp Client.h Server.h common.h
+	$(cc) $(CFLAGS) netcat_part.cpp Client.h common.h
+Client.o : Client.h Client.cpp utils.h common.h
+	$(cc) $(CFLAGS) Client.h Client.cpp utils.h common.h
+Server.o : Server.h Server.cpp utils.h common.h
+	$(cc) $(CFLAGS) Server.h Server.cpp utils.h common.h
+utils.o : utils.cpp utils.h common.h
+	$(cc) $(CFLAGS) utils.h utils.cpp common.h
 
 clean :
 	rm -f *.o 

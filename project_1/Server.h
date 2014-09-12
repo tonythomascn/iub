@@ -5,9 +5,9 @@
 #include <arpa/inet.h>
 #include <string>
 #include <unistd.h>
+#include "common.h"
 using namespace std;
 
-const int BUF_SIZE = 1024;
 const int MAX_QUE = 1;
 
 /**
@@ -16,7 +16,8 @@ const int MAX_QUE = 1;
 class Server {
 
 public:
-  Server(string address, int port);
+  Server(string address, int port, string ofile);
+  Server(struct sockaddr_in, string);
   // accept a client, return the sock
   int acceptClient();
   // process the accepted client
@@ -26,6 +27,7 @@ public:
 private:
   int serverSock, clientSock;
   struct sockaddr_in serverAddr, clientAddr;
+  string outfile;
 
 };
 
