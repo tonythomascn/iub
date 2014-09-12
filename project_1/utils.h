@@ -46,9 +46,13 @@ bool printMSG(string msg);
 
 void parse_args(nc_args_t * nc_args, int argc, char * argv[]);
 
-
-
+// make sure that message has at least (sizeof(int) + EVP_MAX_MD_SIZE) pre-avaible bytes
+char * prependDigest(char *message, int msg_len);
+bool verifyMessage(char * c_msg, int msg_len);
+char * extractMessage(char * c_msg);
 #endif
+
+
 
 
 

@@ -76,7 +76,11 @@ bool Server::processClient(int sock) {
   FILE *fp = fopen(outfile.c_str(), "wb");
   int t;
   while((t =  read(sock, buffer, BUF_SIZE)) ) {
-    fwrite(buffer, t, 1, fp);
+    if ( !verifyMessage(buffer, t - PRE_SIZE) ) {
+      cerr << "Data pocket is not as the same as the original!" << endl;
+      // what action do I need to take ?
+    }
+    fwrite(buffer + PRE_SIZE, t - PRE_SIZE, 1, fp);
   }  
   close(sock);
   fclose(fp);

@@ -2,6 +2,7 @@
 #include "utils.h"
 #include <iostream> 
 #include <string.h>
+//#include <openssl/hmac.h>
 using namespace std;
 
 Client::Client() {
@@ -59,12 +60,20 @@ bool Client::connectServer(struct sockaddr_in server) {
 }
 
 
+
+// For hamc, reserve fixed length for hashlen + hash
+// e.g. fixed length = sizeof(int) + EVP_MAX_MD_SIZE
+
 /**
    send data to the connected host
 */
 
 bool Client::sendData(string data) {
-  int status = send(sockfd, data.c_str(), strlen( data.c_str()), 0);
+  int msg_len = strlen( data.c_str() );
+  char buf[msg_len + PRE_SIZE];
+  memcpy(buf + PRE_SIZE, data.c_str(), msg_len);
+  char *new_msg = prependDigest(buf + PRE_SIZE, msg_len);
+  int status = send(sockfd, new_msg, msg_len + PRE_SIZE, 0);
   if (status < 0) {
     cerr << "Failed to send data." << endl;
     return false;
@@ -83,7 +92,9 @@ bool Client::sendData(string fileName, int offset, int n_bytes) {
   fseek(fp, offset, SEEK_SET);
   char buffer[BUF_SIZE];
   int t;
-  while ( (t = fread(buffer, 1, BUF_SIZE, fp)) && (n_bytes > 0)  ) {
+  char *msg = buffer + PRE_SIZE;
+  int avalSize = BUF_SIZE - PRE_SIZE;
+  while ( (t = fread(msg, 1, avalSize, fp)) && (n_bytes > 0)  ) {
     if (t <= n_bytes) {
       n_bytes -= t;
     }
@@ -92,7 +103,7 @@ bool Client::sendData(string fileName, int offset, int n_bytes) {
       n_bytes = 0;
     }
     // now send data ...
-    int status = send(sockfd, buffer, t, 0);
+    int status = send(sockfd, prependDigest(msg, t), t + PRE_SIZE, 0);
     if (status < 0) {
       cerr << "Failed to send data." << endl;
       fclose(fp);

@@ -3,6 +3,8 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <iostream>
+#include <openssl/hmac.h>
+
 using namespace std;
 
 /**
@@ -137,3 +139,44 @@ void parse_args(nc_args_t * nc_args, int argc, char * argv[]){
   }
   return;
 }
+
+
+// return hashlen + hash + data
+char * prependDigest(char *message, int msg_len) {
+  char *hashlen = message - EVP_MAX_MD_SIZE - sizeof(int);
+  char *hash = message - EVP_MAX_MD_SIZE;
+  HMAC(EVP_sha1(), key, KEY_LEN, (unsigned char *) message, 
+       msg_len, (unsigned char *) hash, (unsigned int *) hashlen );
+  return message - EVP_MAX_MD_SIZE - sizeof(int);
+}
+
+bool verifyMessage(char * c_msg, int msg_len) {
+  int totpre = EVP_MAX_MD_SIZE + sizeof(int);
+  char buf[totpre];
+  memcpy(&buf, c_msg, totpre);
+  int hashlen;
+  memcpy(&hashlen, buf, sizeof(int));
+  char * new_msg = prependDigest(c_msg + totpre , msg_len);
+  return ( memcmp(new_msg + sizeof(int), buf + sizeof(int), hashlen) == 0 );
+}
+
+
+char * extractMessage(char * c_msg) {
+  return c_msg + EVP_MAX_MD_SIZE + sizeof(int);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
