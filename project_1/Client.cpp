@@ -1,8 +1,7 @@
+#include <unistd.h>
 #include "Client.h"
 #include "utils.h"
-#include <iostream> 
-#include <string.h>
-using namespace std;
+#include "common.h"
 
 Client::Client() {
   sockfd = -1; // set as no connection
@@ -12,7 +11,7 @@ Client::Client() {
 /**
    connect to a given address and port
 */
-bool Client::connectServer(string address, int port) {
+bool Client::connectServer(std::string address, int port) {
   // // create socket
   // if (sockfd == -1) {
   //   sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -40,7 +39,7 @@ bool Client::connectServer(struct sockaddr_in server) {
   if (sockfd == -1) {
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd == -1) {
-      cerr << "Failed to create socket" << endl;
+        std::cerr << "Failed to create socket" << std::endl;
       return false;
     }
   }
@@ -51,7 +50,7 @@ bool Client::connectServer(struct sockaddr_in server) {
   // connect to server
   int status = connect(sockfd, (struct sockaddr *)&server, sizeof(server));
   if (status < 0) {
-    cerr << "Connect failed." << endl;
+      std::cerr << "Connect failed." << std::endl;
     return false;
   }
   printMSG("Connecting to server ... OK!\n");
@@ -63,20 +62,20 @@ bool Client::connectServer(struct sockaddr_in server) {
    send data to the connected host
 */
 
-bool Client::sendData(string data) {
+bool Client::sendData(std::string data) {
   int status = send(sockfd, data.c_str(), strlen( data.c_str()), 0);
   if (status < 0) {
-    cerr << "Failed to send data." << endl;
+      std::cerr << "Failed to send data." << std::endl;
     return false;
   }
   printMSG("Sending data ... OK!\n");
   return true;
 }
 
-bool Client::sendData(string fileName, int offset, int n_bytes) {
+bool Client::sendData(std::string fileName, int offset, int n_bytes) {
   FILE *fp = fopen(fileName.c_str(), "rb");
   if (fp == NULL) {
-    cerr << "Failed to open file." << endl;
+      std::cerr << "Failed to open file." << std::endl;
     return false;
   }
   if (offset > 0) offset--;
@@ -94,7 +93,7 @@ bool Client::sendData(string fileName, int offset, int n_bytes) {
     // now send data ...
     int status = send(sockfd, buffer, t, 0);
     if (status < 0) {
-      cerr << "Failed to send data." << endl;
+        std::cerr << "Failed to send data." << std::endl;
       fclose(fp);
       return false;
     }
@@ -108,14 +107,14 @@ bool Client::sendData(string fileName, int offset, int n_bytes) {
 /**
    receive data from the connected host
 */
-string Client::receiveData(int dataSize = 1024) {
+std::string Client::receiveData(int dataSize = 1024) {
   char buffer[dataSize];
   int status = recv(sockfd, buffer, sizeof(buffer), 0);
   if (status < 0) {
-    cerr << "Failed to receive data!" << endl;
+      std::cerr << "Failed to receive data!" << std::endl;
   }
   printMSG("Receiving data ... OK!\n");
-  return string(buffer);
+    return std::string(buffer);
 }
 
 

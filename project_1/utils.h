@@ -1,18 +1,8 @@
 #ifndef _UTILS_H_
 #define _UTILS_H_
 
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <netdb.h>
-#include <cstring>
 #include <iostream>
-#include <stdlib.h>
-#include <unistd.h>
-#include <stdio.h>
-
-using namespace std;
-
+#include <netinet/in.h>
 
 /**
  * Structure to hold all relevant state
@@ -38,11 +28,11 @@ typedef struct nc_args{
 void usage(FILE * file);
 
 
-struct sockaddr_in setupAddr(string addr, int port);
+struct sockaddr_in setupAddr(std::string addr, int port);
 struct sockaddr_in setupAddr(struct sockaddr_in ska);
 
 // default output stream = std::cerr
-bool printMSG(string msg);
+bool printMSG(std::string msg);
 
 void parse_args(nc_args_t * nc_args, int argc, char * argv[]);
 

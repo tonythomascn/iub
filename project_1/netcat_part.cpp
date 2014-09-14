@@ -1,15 +1,11 @@
 #include <iostream>
-#include <stdlib.h>
+#include <cstdlib>
 #include "Client.h"
 #include "common.h"
 #include "Server.h"
 #include "utils.h"
 
 // finish this project first, then handle the errors.
-
-
-
-using namespace std;
 
 bool VERBOSE = false;
 

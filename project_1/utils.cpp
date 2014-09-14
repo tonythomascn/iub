@@ -1,15 +1,14 @@
+#include <unistd.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <netdb.h>
 #include "utils.h"
 #include "common.h"
-#include <unistd.h>
-#include <stdlib.h>
-#include <iostream>
-using namespace std;
-
 /**
    use `addr` and `port` to construct
    `addr_port` with type `struct sockaddr_in`
 */
-struct sockaddr_in setupAddr(string addr, int port) {
+struct sockaddr_in setupAddr(std::string addr, int port) {
   struct sockaddr_in addr_port;
   addr_port.sin_addr.s_addr = inet_addr( addr.c_str() );
   addr_port.sin_family = AF_INET;
@@ -24,10 +23,10 @@ struct sockaddr_in setupAddr(struct sockaddr_in ska) {
 }
 
 
-bool printMSG(string msg) {
+bool printMSG(std::string msg) {
   if (! VERBOSE) 
     return false;
-  cerr << msg;
+  std::cerr << msg;
   return true;
 }
 
