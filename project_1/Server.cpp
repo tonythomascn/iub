@@ -12,7 +12,7 @@ Server::Server(std::string addr, int port, std::string ofile) {
     serverAddr = setupAddr(addr, port);
     Server(serverAddr, ofile);
     
-    m_pCFileOperation = new CFileOperation(ofile);
+    m_pCFileOperation = new CFileOperation(".//", ofile);
     if (NULL == m_pCFileOperation)
     {
         fprintf(stderr, "ERROR: Server construct %s,%s,%d\n", __FILE__,__PRETTY_FUNCTION__,__LINE__);
@@ -74,25 +74,31 @@ int Server::acceptClient() {
 
 
 bool Server::processClient(int sock) {
-    char buffer[BUF_SIZE];
-    FILE *fp = fopen(outfile.c_str(), "wb");
-    int t;
-    while((t =  read(sock, buffer, BUF_SIZE)) ) {
-        fwrite(buffer, t, 1, fp);
-    }  
-    close(sock);
-    fclose(fp);
-    printMSG("Receiving data ... OK!\n");
-    return true;
+     char buffer[BUF_SIZE];
+  FILE *fp = fopen(outfile.c_str(), "wb");
+  int t;
+  while((t =  read(sock, buffer, BUF_SIZE)) ) {
+    if ( !verifyMessage(buffer, t - PRE_SIZE) ) {
+        std::cerr << "Data pocket is not as the same as the original!" << std::endl;
+      // what action do I need to take ?
+    }
+    fwrite(buffer + PRE_SIZE, t - PRE_SIZE, 1, fp);
+  }  
+  close(sock);
+  fclose(fp);
+  printMSG("Receiving data ... OK!\n");
+  return true;
 }
 
 bool Server::ProcessClient(int Socket)
 {
     char buffer[BUF_SIZE] = "\0";
-    ssize_t ireturn;
-    while ((ireturn = read(Socket, buffer, BUF_SIZE)))
+    int ireturn = -1;
+    while ((ireturn = static_cast<int>(read(Socket, buffer, BUF_SIZE))))
     {
-        m_pCFileOperation->WriteFile(buffer, BUF_SIZE);
+        if (!verifyMessage(buffer, ireturn - PRE_SIZE))
+            fprintf(stderr, "ERROR: Data NOT the same as the original! %s,%s,%d", __FUNCTION__, __PRETTY_FUNCTION__, __LINE__);
+        m_pCFileOperation->WriteFile(buffer + PRE_SIZE, ireturn - PRE_SIZE);
     }
     if (-1 != Socket)
         close(Socket);

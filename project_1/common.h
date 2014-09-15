@@ -1,3 +1,4 @@
+
 #ifndef _COMMON_H_
 #define _COMMON_H_
 #include <openssl/hmac.h>
@@ -15,6 +16,14 @@ const char key[] = "jdsafjoiwiofhaefshf";
 const int KEY_LEN = sizeof(key);
 
 #endif
+
+
+
+
+
+
+
+
 
 
 

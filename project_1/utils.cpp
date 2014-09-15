@@ -2,6 +2,7 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <openssl/hmac.h>
 #include "utils.h"
 #include "common.h"
 /**
@@ -136,3 +137,44 @@ void parse_args(nc_args_t * nc_args, int argc, char * argv[]){
   }
   return;
 }
+
+
+// return hashlen + hash + data
+char * prependDigest(char *message, unsigned int msg_len) {
+  char *hashlen = message - EVP_MAX_MD_SIZE - sizeof(unsigned int);
+  char *hash = message - EVP_MAX_MD_SIZE;
+  HMAC(EVP_sha1(), key, KEY_LEN, (unsigned char *) message, 
+       msg_len, (unsigned char *) hash, (unsigned int *) hashlen );
+  return message - EVP_MAX_MD_SIZE - sizeof(unsigned int);
+}
+
+bool verifyMessage(char * c_msg, unsigned int msg_len) {
+  int totpre = EVP_MAX_MD_SIZE + sizeof(unsigned int);
+  char buf[totpre];
+  memcpy(&buf, c_msg, totpre);
+  int hashlen;
+  memcpy(&hashlen, buf, sizeof(unsigned int));
+  char * new_msg = prependDigest(c_msg + totpre , msg_len);
+  return ( memcmp(new_msg + sizeof(unsigned int), buf + sizeof(unsigned int), hashlen) == 0 );
+}
+
+
+char * extractMessage(char * c_msg) {
+  return c_msg + EVP_MAX_MD_SIZE + sizeof(int);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,11 +1,11 @@
 OBJS = netcat_part.o Client.o utils.o Server.o CFileOperation.o
 cc = c++
 DEBUG = -g
-CFLAGS = -Wall -c $(DEBUG)
-LFLAGS = -Wall $(DEBUG)
+CFLAGS =  -c -Wall $(DEBUG) 
+LFLAGS =  -Wall $(DEBUG) 
 
 netcat_part : $(OBJS)
-	$(cc) $(LFAGS) $(OBJS) -o netcat_part
+	$(cc) $(LFAGS) $(OBJS) -o netcat_part -lcrypto
 netcat_part.o : netcat_part.cpp
 	$(cc) $(CFLAGS) netcat_part.cpp
 Client.o : Client.cpp 
@@ -16,6 +16,7 @@ utils.o : utils.cpp
 	$(cc) $(CFLAGS) utils.cpp 
 CFileOperation.o : CFileOperation.cpp
 	$(cc) $(CFLAGS) CFileOperation.cpp 
+
 clean :
 	rm -f *.o 
 	rm -f *~

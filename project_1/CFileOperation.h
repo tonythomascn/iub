@@ -8,11 +8,15 @@
 
 #ifndef CFileOperation_h
 #define CFileOperation_h
-#include <pthread.h>
+//#include <pthread.h>
 #include <iostream>
 class CFileOperation
 {
 public:
+    /*
+     * @brief Constructor, do nothing
+     */
+    CFileOperation();
     /*
      * @brief Constructor, check path and create it
      * @param [in] path
@@ -39,7 +43,13 @@ public:
      * @param [in] buffer
      * @return how many buffer read
      */
-    int ReadFile(void * Buffer, unsigned iBufferLength);
+    int ReadFile(void * Buffer, int iOffset, unsigned iBufferLength);
+    /**
+     * @brief Write buffer to local file
+     * @param [in] buffer
+     * @return how many buffer read
+     */
+    int ReadFile(std::string strFileName, void * Buffer, int iOffset, unsigned iBufferLength);
     /**
      * @brief Open file if not opened
      * @return true/false

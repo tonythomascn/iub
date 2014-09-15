@@ -12,7 +12,12 @@
 #include <sys/stat.h>
 #include <vector>
 #include "CFileOperation.h"
-
+CFileOperation::CFileOperation()
+{
+    m_strLocalPath = ".//";
+    m_strFileName = "";
+    m_iFileDescriber = -1;
+}
 CFileOperation::CFileOperation(std::string strPath, std::string strFileName)
 {
     m_strLocalPath = strPath;
@@ -62,8 +67,12 @@ CFileOperation::~CFileOperation()
 //    }
 //    return false;
 //}
-
-int CFileOperation::ReadFile(void * Buffer, unsigned uiBufferLength)
+int CFileOperation::ReadFile(std::string strFileName, void * Buffer, int iOffset, unsigned uiBufferLength)
+{
+    m_strFileName = strFileName;
+    return ReadFile(Buffer, iOffset, uiBufferLength);
+}
+int CFileOperation::ReadFile(void * Buffer, int iOffset, unsigned uiBufferLength)
 {
     int ireturn = -1;
     if (-1 == m_iFileDescriber)
@@ -74,15 +83,24 @@ int CFileOperation::ReadFile(void * Buffer, unsigned uiBufferLength)
         if (0 > m_iFileDescriber)
         {
             fprintf(stderr, "ERROR: CFileOperation file open %s,%s,%d\n", __FILE__,__PRETTY_FUNCTION__,__LINE__);
-            perror(cfilename);
+            perror(m_strFileName.c_str());
         }
     }
     else
     {
+        off_t ioffset = lseek(m_iFileDescriber, iOffset - 1, SEEK_CUR);
+        if (-1 != ioffset)
+        {
         ireturn = static_cast<int>(read(m_iFileDescriber, Buffer, uiBufferLength));
         if (0 > ireturn)
         {
             fprintf(stderr, "ERROR: CFileOperation file read %s,%s,%d\n", __FILE__,__PRETTY_FUNCTION__,__LINE__);
+            perror(m_strFileName.c_str());
+        }
+        }
+        else
+        {
+            fprintf(stderr, "ERROR: CFileOperation file seek %s,%s,%d\n", __FILE__,__PRETTY_FUNCTION__,__LINE__);
             perror(m_strFileName.c_str());
         }
         if (-1 == close(m_iFileDescriber))
@@ -105,7 +123,7 @@ bool CFileOperation::WriteFile(void * Buffer, unsigned uiBufferLength)
         if (0 > m_iFileDescriber)
         {
             fprintf(stderr, "ERROR: CFileOperation file open %s,%s,%d\n", __FILE__,__PRETTY_FUNCTION__,__LINE__);
-            perror(cfilename);
+            perror(m_strFileName.c_str());
             breturn = false;
             return breturn;
         }

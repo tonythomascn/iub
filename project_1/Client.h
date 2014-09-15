@@ -3,7 +3,7 @@
 
 #include <iostream>
 #include <netinet/in.h>
-
+#include "CfileOperation.h"
 /**
    Client class using TCP
 */
@@ -25,6 +25,7 @@ private:
   // socket file description
   int sockfd;
   struct sockaddr_in server;
+   CFileOperation * m_pCFileOperation;
 
 };
 
