@@ -3,7 +3,7 @@
 
 #include <iostream>
 #include <netinet/in.h>
-#include "CfileOperation.h"
+#include "CFileOperation.h"
 /**
    Client class using TCP
 */
