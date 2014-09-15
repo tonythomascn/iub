@@ -14,7 +14,7 @@
 #include "CFileOperation.h"
 CFileOperation::CFileOperation()
 {
-    m_strLocalPath = ".//";
+    m_strLocalPath = "./";
     m_strFileName = "";
     m_iFileDescriber = -1;
 }
@@ -32,8 +32,8 @@ CFileOperation::CFileOperation(std::string strPath, std::string strFileName)
 }
 CFileOperation::CFileOperation(std::string strPath)
 {
-    m_strLocalPath = strPath.substr(0, strPath.find_last_of("\\"));
-    m_strFileName = strPath.substr(strPath.find_last_of("\\"), strPath.length() - strPath.find_last_of("\\"));
+    m_strLocalPath = strPath.substr(0, strPath.find_last_of("/"));
+    m_strFileName = strPath.substr(strPath.find_last_of("/"), strPath.length() - strPath.find_last_of("/"));
     if (!CheckPath(m_strLocalPath))
     {
         fprintf(stdout, "ERROR: CFileOpeartion path check %s,%s,%d\n", __FILE__,__PRETTY_FUNCTION__,__LINE__);
@@ -78,12 +78,12 @@ int CFileOperation::ReadFile(void * Buffer, int iOffset, unsigned uiBufferLength
     if (-1 == m_iFileDescriber)
     {
         char cfilename[1024] = "\0";
-        snprintf(cfilename, sizeof(cfilename), "%s%s%s", m_strLocalPath.c_str(), "\\", m_strFileName.c_str());
+        snprintf(cfilename, sizeof(cfilename), "%s%s%s", m_strLocalPath.c_str(), "/", m_strFileName.c_str());
         m_iFileDescriber = open(cfilename, O_RDONLY, 0600);
         if (0 > m_iFileDescriber)
         {
             fprintf(stderr, "ERROR: CFileOperation file open %s,%s,%d\n", __FILE__,__PRETTY_FUNCTION__,__LINE__);
-            perror(m_strFileName.c_str());
+            perror(cfilename);
         }
     }
     else
