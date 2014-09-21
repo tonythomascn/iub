@@ -113,7 +113,7 @@ bt_info_t parse_torrent_content(void * torrent_content, unsigned int nbytes){
     std::map<int, std::string> metainfomap;
     std::map<int,std::string>::iterator it;
     std::stack<char> metainfostack;
-    for (int i = 0; i < nbytes; i++) {
+    for (unsigned int i = 0; i < nbytes; i++) {
         metainfostack.push(strcontent[i]);
         if ('e' == strcontent[i])
         {
@@ -269,7 +269,7 @@ bt_info_t parse_torrent_content(void * torrent_content, unsigned int nbytes){
 }
 bt_info_t parse_torrent(char * torrent_file)
 {
-    if (nullptr == torrent_file)
+    if (NULL == torrent_file)
     {
         exit(EXIT_FAILURE);
     }

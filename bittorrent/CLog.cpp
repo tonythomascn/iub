@@ -9,6 +9,7 @@
 #include <time.h>
 #include <string.h>
 #include <sstream>
+#include <cstdio>
 #include "CLog.h"
 #include "CFileOperation.h"
 

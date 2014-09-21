@@ -12,7 +12,7 @@ RM      = 	rm -f
 #include and library path
 INCLUDE	=
 LDFLAGS =
-LIB	= $(SYSLIBS) -lcrypto
+LIB	= $(SYSLIBS) -lcrypto -lpthread
 
 FTPCLIENTOBJ	= bt_client.o bt_lib.o bt_setup.o CLog.o CFileOperation.o
 
