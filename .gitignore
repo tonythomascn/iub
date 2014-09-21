@@ -1,1 +1,8 @@
 *.o
+*.log
+bittorrent.xcodeproj/
+*.xcodeproj
+*.pbxproj
+*.xcworkspacedata
+*.xcuserstate
+*.xcscheme
