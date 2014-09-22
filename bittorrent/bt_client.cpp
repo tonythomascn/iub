@@ -11,6 +11,8 @@
 #include <sys/types.h>
 #include <signal.h>
 
+bool VERBOSE = false;
+
 #include "bt_lib.h"
 #include "bt_setup.h"
 #include "CLog.h"
@@ -35,7 +37,7 @@ int main (int argc, char * argv[]){
   }
 
   //read and parse the torrent file here
-    LOG("Starting to parse torrent file...", LOG_NOTIFY);
+  // LOG("Starting to parse torrent file...", LOG_NOTIFY);
     bt_info_t torrent = parse_torrent(bt_args.torrent_file);
    /*
     //holds information about a torrent file
@@ -48,17 +50,19 @@ int main (int argc, char * argv[]){
     } bt_info_t;
     */
   if(bt_args.verbose){
-      printf("Torrent INFO:\n");
-      printf("name: %s\n", torrent.name);
-      printf("piece_length: %d bytes\n", torrent.piece_length);
-      printf("length: %d bytes\n", torrent.length);
-      printf("num_pieces: %d\n", torrent.num_pieces);
-      printf("\n");
-    // print out the torrent file arguments here
+    // set global variable
+    VERBOSE = true;
   }
+  // print out the torrent file arguments here
+  printMSG("Torrent INFO:\n");
+  printMSG("name: %s\n", torrent.name);
+  printMSG("piece_length: %d bytes\n", torrent.piece_length);
+  printMSG("length: %d bytes\n", torrent.length);
+  printMSG("num_pieces: %d\n", torrent.num_pieces);
+  printMSG("\n");
 
   //main client loop
-  printf("Starting Main Loop\n");
+  printMSG("Starting Main Loop\n");
   while(1){
 
     //try to accept incoming connection from new peer

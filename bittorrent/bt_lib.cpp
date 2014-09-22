@@ -17,6 +17,25 @@
 #include "bt_setup.h"
 #include "CFileOperation.h"
 #include "CLog.h"
+#include <iostream>
+
+
+bool printMSG(std::string msg) {
+  if (VERBOSE) {
+    std::cout << msg;
+  }
+  return VERBOSE && !msg.empty();
+}
+
+bool printMSG(const char *fmt, ...) {
+  if (!VERBOSE) return false;
+  va_list args;
+  va_start(args, fmt);
+  vprintf(fmt, args);
+  va_end(args);
+  return true;
+}
+
 
 void calc_id(char * ip, unsigned short port, char *id){
     char data[256];

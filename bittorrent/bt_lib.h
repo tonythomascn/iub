@@ -6,9 +6,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
-
+#include <stdarg.h>
 #include <poll.h>
-
+#include <string>
 //networking stuff
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -17,6 +17,9 @@
 
 #include "bt_lib.h"
 
+// control the verbose output
+// defined in bt_client
+extern bool VERBOSE;
 
 /*Maximum file name size, to make things easy*/
 #define FILE_NAME_MAX 1024
@@ -127,6 +130,12 @@ typedef struct bt_msg{
 } bt_msg_t;
 
 
+// print msg to std::cout when VERBOSE is true
+// for error, should use perror etc.
+bool printMSG(std::string msg);
+// take the same args as printf
+// print to standard output when VERBOSE is true
+bool printMSG(const char *fmt, ...);
 
 
 
