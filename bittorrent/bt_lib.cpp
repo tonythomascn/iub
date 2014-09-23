@@ -180,16 +180,16 @@ struct HeadValue {
   char *pValue;
   int length;
   int iValue;
+  //char ctype;
 };
  
-void recusiveParse(char*& buf, HeadValue &headValue, bt_info_t& info) {
+void recusiveParse(char*& buf, HeadValue &hv, bt_info_t& info) {
   // if skip the key -> value (i.e. do not store)
-  static bool skipQ = true;
+  static bool infoQ = false;
   if (buf[0] == 'e') return;
 
   if (buf[0] == 'd') {
     ++buf;
-    HeadValue hv;
     while (buf[0] != 'e') {
       recusiveParse(buf, hv, info);
 
@@ -198,18 +198,19 @@ void recusiveParse(char*& buf, HeadValue &headValue, bt_info_t& info) {
       memcpy(head, hv.pValue, hv.length);
       head[hv.length] = '\0';
       std::string sHead(head);
-      
-      if (skipQ && sHead == "info" && buf[0] == 'd') {
-	skipQ = false;
-	recusiveParse(buf, hv, info);
+      if (!infoQ && sHead == "info" && buf[0] == 'd') {
+      	infoQ = true;
+      }
+      if (infoQ && sHead == "files" && buf[0] == 'l') {
+	hv.length = 0;
       }
       // get the value part
       recusiveParse(buf, hv,  info);
 
-      if (!skipQ) {
+      if (infoQ) {
 	// keep record
 	if (sHead == "length") {
-	  info.length = hv.iValue;
+	    info.length += hv.iValue;
 	}
 	if (sHead == "name") {
 	  memcpy(info.name, hv.pValue, hv.length);
@@ -222,7 +223,8 @@ void recusiveParse(char*& buf, HeadValue &headValue, bt_info_t& info) {
 	  info.num_pieces =  (info.length + info.piece_length - 1) / info.piece_length;
 	  if (info.num_pieces * ID_SIZE != hv.length) {
 	    perror("Error .torrent file!\n");
-	    exit(1);
+	    // exit(1);
+	    return;
 	  }
 	  info.piece_hashes = (char **) malloc(info.num_pieces * sizeof(char *));
 	  // now read piece_hashes
@@ -235,21 +237,21 @@ void recusiveParse(char*& buf, HeadValue &headValue, bt_info_t& info) {
 	}
       }// if
     }// while
+    buf++;
   } 
 
   else if (buf[0] == 'l') {
     ++buf;
-    HeadValue hv;
     while (buf[0] != 'e') recusiveParse(buf, hv, info);
     ++buf;
   }
 
   else if (buf[0] == 'i') {
-    headValue.iValue = get_iNUMe(buf);
+    hv.iValue = get_iNUMe(buf);
   }
 
   else if (buf[0] <= '9' && buf[0] >= '0') {
-    headValue.pValue = getIntChars(buf, headValue.length);
+    hv.pValue = getIntChars(buf, hv.length);
   }
 }
 
