@@ -31,7 +31,7 @@ int main (int argc, char * argv[]){
   //read and parse the torrent file here
   // LOG("Starting to parse torrent file...", LOG_NOTIFY);
   bt_info_t torrent = parse_torrent(bt_args.torrent_file);
-  
+  printMSG("Parsing .torrent file ...  DONE!\n");
 // // print args, not require in the milestone
 //   printMSG("Args:\n");
 //   printMSG("verbose: %d\n", bt_args.verbose);
@@ -40,7 +40,7 @@ int main (int argc, char * argv[]){
 //   printMSG("torrent_file: %s\n", bt_args.torrent_file);
 
   // print out the torrent file arguments here
-  printMSG("Torrent INFO:\n");
+  printMSG("\nTorrent INFO:\n");
   printMSG("name: %s\n", torrent.name);
   printMSG("piece_length: %d bytes\n", torrent.piece_length);
   printMSG("length: %d bytes\n", torrent.length);

@@ -175,6 +175,7 @@ int get_iNUMe(char*& buf) {
   return atoi(st);
 }
 
+// use to keep key / value structure
 struct HeadValue {
   char *pValue;
   int length;
@@ -218,7 +219,19 @@ void recusiveParse(char*& buf, HeadValue &headValue, bt_info_t& info) {
 	  info.piece_length = hv.iValue;
 	}
 	if (sHead == "pieces") {
-	  buf[0] = 'e';
+	  info.num_pieces =  (info.length + info.piece_length - 1) / info.piece_length;
+	  if (info.num_pieces * ID_SIZE != hv.length) {
+	    perror("Error .torrent file!\n");
+	    exit(1);
+	  }
+	  info.piece_hashes = (char **) malloc(info.num_pieces * sizeof(char *));
+	  // now read piece_hashes
+	  for (int i = 0; i < info.num_pieces; ++i) {
+	    char *hashBuf = (char *) malloc(2 + ID_SIZE * sizeof(char));
+	    memcpy(hashBuf, i * ID_SIZE + hv.pValue, ID_SIZE);
+	    hashBuf[ID_SIZE] = '\0';
+	    info.piece_hashes[i] = hashBuf;
+	  }
 	}
       }// if
     }// while
@@ -245,7 +258,6 @@ bt_info_t parse_torrent_content_new(char * buf, int bufSize) {
   bt_info_t info;
   HeadValue hv;
   recusiveParse(buf, hv, info);
-  info.num_pieces =  (info.length + info.piece_length - 1) / info.piece_length;
   return info;
 }
 
