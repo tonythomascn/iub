@@ -209,4 +209,6 @@ long get_iNUMe(char *& buf);
 
 bt_info_t parse_torrent_content_new(char * buf, int bufSize);
 
+// clean the memory of bt_info_t info
+void releaseInfo(bt_info_t *);
 #endif

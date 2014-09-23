@@ -46,7 +46,7 @@ int main (int argc, char * argv[]){
   printMSG("length: %ld bytes\n", torrent.length);
   printMSG("num_pieces: %ld\n", torrent.num_pieces);
   printMSG("\n");
-
+  releaseInfo(&torrent);
 
   if(VERBOSE){
     for(i=0; i<MAX_CONNECTIONS; i++){

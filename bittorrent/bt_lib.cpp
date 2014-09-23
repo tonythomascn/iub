@@ -264,6 +264,15 @@ bt_info_t parse_torrent_content_new(char * buf, int bufSize) {
 }
 
 
+// clean the memory of info
+void releaseInfo(bt_info_t *info) {
+  for (int i = 0; i < info->num_pieces; ++i)
+    free(info->piece_hashes[i]);
+  free(info->piece_hashes);
+}
+
+
+
 
 
 
