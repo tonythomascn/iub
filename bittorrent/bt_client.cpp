@@ -42,9 +42,9 @@ int main (int argc, char * argv[]){
   // print out the torrent file arguments here
   printMSG("\nTorrent INFO:\n");
   printMSG("name: %s\n", torrent.name);
-  printMSG("piece_length: %d bytes\n", torrent.piece_length);
-  printMSG("length: %d bytes\n", torrent.length);
-  printMSG("num_pieces: %d\n", torrent.num_pieces);
+  printMSG("piece_length: %ld bytes\n", torrent.piece_length);
+  printMSG("length: %ld bytes\n", torrent.length);
+  printMSG("num_pieces: %ld\n", torrent.num_pieces);
   printMSG("\n");
 
 
