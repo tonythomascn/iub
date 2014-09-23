@@ -223,8 +223,8 @@ void recusiveParse(char*& buf, HeadValue &hv, bt_info_t& info) {
 	  info.num_pieces =  (info.length + info.piece_length - 1) / info.piece_length;
 	  if (info.num_pieces * ID_SIZE != hv.length) {
 	    perror("Error .torrent file!\n");
-	    // exit(1);
-	    return;
+	    exit(1);
+	    //return;
 	  }
 	  info.piece_hashes = (char **) malloc(info.num_pieces * sizeof(char *));
 	  // now read piece_hashes
@@ -259,6 +259,7 @@ void recusiveParse(char*& buf, HeadValue &hv, bt_info_t& info) {
 bt_info_t parse_torrent_content_new(char * buf, int bufSize) {
   bt_info_t info;
   HeadValue hv;
+  info.length = 0;
   recusiveParse(buf, hv, info);
   return info;
 }
