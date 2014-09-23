@@ -115,177 +115,8 @@ void print_peer(peer_t *peer){
         printf("\n");
     }
 }
-////holds information about a torrent file
-//typedef struct {
-//    char name[FILE_NAME_MAX]; //name of file
-//    int piece_length; //number of bytes in each piece
-//    int length; //length of the file in bytes
-//    int num_pieces; //number of pieces, computed based on above two values
-//    char ** piece_hashes; //pointer to 20 byte data buffers containing the sha1sum of each of the pieces
-//} bt_info_t;
-bt_info_t parse_torrent_content(void * torrent_content, unsigned int nbytes){
-    bt_info_t torrent_info;
-    int ilength = 0;
-    int icounter = 1;
-    std::string strcontent = static_cast<char*>(torrent_content);
-    std::string strtmp = "";
-    std::map<int, std::string> metainfomap;
-    std::map<int,std::string>::iterator it;
-    std::stack<char> metainfostack;
-    for (unsigned int i = 0; i < nbytes; i++) {
-        metainfostack.push(strcontent[i]);
-        if ('e' == strcontent[i])
-        {
-            //d<contents>e or l<contents>e or i<integer>e
-            metainfostack.pop();
-            while (1){
-                if ('0' <= metainfostack.top() && '9' >= metainfostack.top())
-                {
-                    strtmp = metainfostack.top() + strtmp;
-                    metainfostack.pop();
-                }
-                else
-                    break;
-            }
-            if ("" != strtmp)
-            {
-                metainfomap[icounter - 1] += ':' + strtmp;
-                ilength = static_cast<int>(strtmp.length());
-                //printf("strtmp=%s\n", strtmp.c_str());
-                //printf("%s\n", (strcontent.substr(i + 1, strcontent.length() - i - 1)).c_str());
-                strtmp = "";
-                ilength = 0;
-            }
-            metainfostack.pop();//pop 'i' or 'd' or 'l'
-        }//if ('e' == strcontent[i])
-        if (':' == strcontent[i])
-        {
-            //<length>:<contents>
-            metainfostack.pop();
-            while (1){
-                if ('0' <= metainfostack.top() && '9' >= metainfostack.top())
-                {
-                    strtmp = metainfostack.top() + strtmp;
-                    metainfostack.pop();
-                }
-                else
-                    break;
-            }
-            if ("" != strtmp)
-            {
-                ilength = atoi(strtmp.c_str());
-                strtmp = strcontent.substr(i + 1, ilength);
-                metainfomap.insert(std::pair<int, std::string>(icounter, strtmp));
-                icounter++;
-                i += ilength;
-                //printf("strtmp=%s\n", strtmp.c_str());
-                //printf("%s\n", (strcontent.substr(i + 1, strcontent.length() - i - 1)).c_str());
-                strtmp = "";
-                ilength = 0;
-            }
-        }//if (':' == strcontent[i])
-        //if ('0' <= ch && '9' >= ch){
-        //    //printf(" %c is a number\n" ,ch);
-        //}
-        //else if(('a' <= ch && 'z' >= ch)||('A' <= ch && 'Z' >= ch)){
-        //    //printf(" %c is a letter\n" ,ch);
-        //    if ('d' == ch)
-        //        printf("here comes the dictionary\n");
-        //    else if ('l' == ch)
-        //        printf("here comes the list\n");
-        //    else if ('i' == ch)
-        //    {
-        //        printf("here comes the interger\n");
-        //        
-        //    }//else if ('i' == ch)
-        //    if ('e' == ch)
-        //    {
-        //        metainfostack.pop();
-        //        while (1){
-        //            if ('0' <= metainfostack.top() && '9' >= metainfostack.top())
-        //            {
-        //                strtmp = metainfostack.top() + strtmp;
-        //                metainfostack.pop();
-        //            }
-        //            else
-        //                break;
-        //        }
-        //        if ("" != strtmp)
-        //        {
-        //            metainfomap[icounter] += strtmp;
-        //            ilength = static_cast<int>(strtmp.length());
-        //            printf("strtmp=%s\n", strtmp.c_str());
-        //            printf("%s\n", (strcontent.substr(i + 1, strcontent.length() - i - 1)).c_str());
-        //            strtmp = "";
-        //            ilength = 0;
-        //        }
-        //        metainfostack.pop();//pop i
-        //    }//if ('e' == ch)
-        //}
-        //else{
-        //    if (':' == ch)
-        //    {
-        //        metainfostack.pop();
-        //        while (1){
-        //            if ('0' <= metainfostack.top() && '9' >= metainfostack.top())
-        //            {
-        //                strtmp = metainfostack.top() + strtmp;
-        //                metainfostack.pop();
-        //            }
-        //            else
-        //                break;
-        //        }
-        //        if ("" != strtmp)
-        //        {
-        //            ilength = atoi(strtmp.c_str());
-        //            strtmp = strcontent.substr(i + 1, ilength);
-        //            metainfomap.insert(std::pair<int, std::string>(icounter, strtmp));
-        //            icounter++;
-        //            i += ilength;
-        //            printf("strtmp=%s\n", strtmp.c_str());
-        //            printf("%s\n", (strcontent.substr(i + 1, strcontent.length() - i - 1)).c_str());
-        //            strtmp = "";
-        //            ilength = 0;
-        //        }
-        //    }//if (':' == ch)
-        //    //printf(" %c is not a number or letter\n" ,ch) ;
-        //}
-    }
 
-    for (it = metainfomap.begin(); it != metainfomap.end(); it++)
-    {
-        if ("name" == it->second)
-        {
-            strncpy(torrent_info.name, (++it)->second.c_str(), FILE_NAME_MAX);
-        }
-        else if ("pieces" == it->second)
-        {
-            //printf("hash = %lu", (++it)->second.length());
-            ilength = static_cast<int>((++it)->second.length());
-            torrent_info.piece_hashes = (char**)malloc(sizeof(char**));
-            torrent_info.num_pieces = ilength / 20 + 1;
-            for (int i = 0; i < ilength / 20; i++)
-            {
-                torrent_info.piece_hashes[i] = (char*)malloc(sizeof(char*)*20);
-                strncpy(torrent_info.piece_hashes[i], it->second.c_str(), 20);
-            }
-        }
-        else if (std::string::npos != it->second.find(":"))
-        {
-            strtmp = it->second.substr(it->second.find(":") + 1, it->second.length() - it->second.find(":") - 1);
-            ilength = atoi(strtmp.c_str());
-            if (std::string::npos != it->second.find("length") && std::string::npos != it->second.find("piece"))
-            {
-                torrent_info.piece_length = ilength;
-            }
-            else if (0 == it->second.find("length"))
-            {
-                torrent_info.length = ilength;
-            }
-        }
-    }
-    return torrent_info;
-}
+
 
 bt_info_t parse_torrent(char * torrent_file)
 {
@@ -344,57 +175,76 @@ int get_iNUMe(char*& buf) {
   return atoi(st);
 }
 
+struct HeadValue {
+  char *pValue;
+  int length;
+  int iValue;
+};
+ 
+void recusiveParse(char*& buf, HeadValue &headValue, bt_info_t& info) {
+  // if skip the key -> value (i.e. do not store)
+  static bool skipQ = true;
+  if (buf[0] == 'e') return;
+
+  if (buf[0] == 'd') {
+    ++buf;
+    HeadValue hv;
+    while (buf[0] != 'e') {
+      recusiveParse(buf, hv, info);
+
+      // convert hv.pValue to string
+      char head[MAX_ITEM_SIZE];
+      memcpy(head, hv.pValue, hv.length);
+      head[hv.length] = '\0';
+      std::string sHead(head);
+      
+      if (skipQ && sHead == "info" && buf[0] == 'd') {
+	skipQ = false;
+	recusiveParse(buf, hv, info);
+      }
+      // get the value part
+      recusiveParse(buf, hv,  info);
+
+      if (!skipQ) {
+	// keep record
+	if (sHead == "length") {
+	  info.length = hv.iValue;
+	}
+	if (sHead == "name") {
+	  memcpy(info.name, hv.pValue, hv.length);
+	  info.name[hv.length] = '\0';
+	}
+	if (sHead == "piece length") {
+	  info.piece_length = hv.iValue;
+	}
+	if (sHead == "pieces") {
+	  buf[0] = 'e';
+	}
+      }// if
+    }// while
+  } 
+
+  else if (buf[0] == 'l') {
+    ++buf;
+    HeadValue hv;
+    while (buf[0] != 'e') recusiveParse(buf, hv, info);
+    ++buf;
+  }
+
+  else if (buf[0] == 'i') {
+    headValue.iValue = get_iNUMe(buf);
+  }
+
+  else if (buf[0] <= '9' && buf[0] >= '0') {
+    headValue.pValue = getIntChars(buf, headValue.length);
+  }
+}
+
 
 bt_info_t parse_torrent_content_new(char * buf, int bufSize) {
   bt_info_t info;
-  // skip first 'd'
-  buf++;
-  char *stopSign = buf + bufSize - 2;
-  bool valid = false;
-  while (buf != stopSign) {
-    // in each loop step, get "head -> value"
-    // now set head ...
-    int length;
-    char *p = getIntChars(buf, length);
-    char head[MAX_ITEM_SIZE];
-    memcpy(head, p, length);
-    head[length] = '\0';
-    std::string sHead(head);
-    //    printMSG(sHead + '\n');
-    // set following to skip url, just record info structure
-    if (sHead == "info" && buf[0] == 'd' && !valid) {
-      buf++;
-      valid = true;
-      continue;
-    }
-
-    // now set value
-    int iValue = -23333;
-    char *pValue = NULL;
-    if (buf[0] == 'i') {
-      iValue = get_iNUMe(buf);
-    } 
-    else if (buf[0] <= '9' && buf[0] >= '0') {
-      pValue = getIntChars(buf, length);
-    }
-
-  
-    if (valid) {
-      if (sHead == "length") {
-	info.length = iValue;
-      }
-      if (sHead == "name") {
-	memcpy(info.name, pValue, length);
-	info.name[length] = '\0';
-      }
-      if (sHead == "piece length") {
-	info.piece_length = iValue;
-      }
-      if (sHead == "pieces") {
-	buf = stopSign;
-      }
-    }// if (valid) ..
-  }// while
+  HeadValue hv;
+  recusiveParse(buf, hv, info);
   info.num_pieces =  (info.length + info.piece_length - 1) / info.piece_length;
   return info;
 }
