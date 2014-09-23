@@ -24,7 +24,7 @@ bool processArgs(nc_args_t args) {
   if (args.listen == 1) {
     Server s = Server(args.destaddr, args.filename);
     int sock = s.acceptClient();
-    return s.processClient(sock);
+    return s.ProcessClient(sock);
   }
   // if message_mode
   if (args.message_mode == 1) {

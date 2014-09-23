@@ -1,4 +1,5 @@
 #include <unistd.h>
+#include <string.h>
 #include "Client.h"
 #include "utils.h"
 #include "common.h"
@@ -43,9 +44,10 @@ bool Client::connectServer(std::string address, int port) {
 bool Client::connectServer(struct sockaddr_in server) {
     // create socket
     if (sockfd == -1) {
-        sockfd = socket(AF_INET, SOCK_STREAM, 0);
+        sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
         if (sockfd == -1) {
             std::cerr << "Failed to create socket" << std::endl;
+            perror("socket");
             return false;
         }
     }
@@ -57,6 +59,7 @@ bool Client::connectServer(struct sockaddr_in server) {
     int status = connect(sockfd, (struct sockaddr *)&server, sizeof(server));
     if (status < 0) {
         std::cerr << "Connect failed." << std::endl;
+        perror("connect");
         return false;
     }
     printMSG("Connecting to server ... OK!\n");
@@ -91,7 +94,7 @@ bool Client::sendData(std::string fileName, int offset, int n_bytes) {
     int t = 0;
     char *msg = buffer + PRE_SIZE;
     int avalSize = BUF_SIZE - PRE_SIZE;
-    while ( (m_pCFileOperation->ReadFile(fileName, buffer, offset + t, avalSize)) && (n_bytes > 0)  ) {
+    while ( (t = m_pCFileOperation->ReadFile(fileName, buffer, offset + t, avalSize)) && (n_bytes > 0)  ) {
         if (t <= n_bytes) {
             n_bytes -= t;
         }

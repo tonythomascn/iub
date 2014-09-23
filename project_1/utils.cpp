@@ -3,6 +3,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <openssl/hmac.h>
+#include <string.h>
 #include "utils.h"
 #include "common.h"
 /**

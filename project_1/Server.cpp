@@ -12,7 +12,7 @@ Server::Server(std::string addr, int port, std::string ofile) {
     serverAddr = setupAddr(addr, port);
     Server(serverAddr, ofile);
     
-    m_pCFileOperation = new CFileOperation(".//", ofile);
+    m_pCFileOperation = new CFileOperation("./", ofile);
     if (NULL == m_pCFileOperation)
     {
         fprintf(stderr, "ERROR: Server construct %s,%s,%d\n", __FILE__,__PRETTY_FUNCTION__,__LINE__);
@@ -31,10 +31,11 @@ Server::Server(std::string addr, int port, std::string ofile) {
 
 Server::Server(struct sockaddr_in serverAddr, std::string ofile) {
     // open the socket
-    serverSock = socket(AF_INET, SOCK_STREAM, 0);
+    serverSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     // if failed to open
     if (serverSock < 0) {
         std::cerr << "Failed to open the socket!\n";
+        perror("socket");
         exit(1);
     }
     printMSG("Opening the socket ... OK!\n");
@@ -47,19 +48,31 @@ Server::Server(struct sockaddr_in serverAddr, std::string ofile) {
     int status = bind(serverSock, (struct sockaddr *)&serverAddr, sizeof(struct sockaddr_in));
     if (status < 0) {
         std::cerr << "Failed to bind the port, check you input!\n";
+        perror("bind");
         exit(1);
     }
     printMSG("Binding to the socket ... OK!\n");
     // set listen to up to 1 queued connection
     if ( listen(serverSock, MAX_QUE) < 0 ) {
         std::cerr << "Failed to listen on server socket.\n";
+        perror("listen");
         exit(1);
     }
     printMSG("Listening on the server socket ... OK!\n");
+    m_pCFileOperation = new CFileOperation("./", ofile);
+    if (NULL == m_pCFileOperation)
+    {
+        fprintf(stderr, "ERROR: Server construct %s,%s,%d\n", __FILE__,__PRETTY_FUNCTION__,__LINE__);
+        exit(EXIT_FAILURE);
+    }
 }
 
 Server::~Server()
 {
+    if (-1 < serverSock)
+        close(serverSock);
+    if (-1 < clientSock)
+        close(clientSock);
     if (NULL != m_pCFileOperation)
         delete m_pCFileOperation;
 }
@@ -68,6 +81,7 @@ int Server::acceptClient() {
     clientSock = accept(serverSock, (struct sockaddr *) &clientAddr, &clientSize);
     if (clientSock < 0) {
         printMSG( "Failed to accept client.\n" );
+        perror("accept");
     }
     return clientSock;
 }

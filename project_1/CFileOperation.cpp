@@ -11,6 +11,8 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include <vector>
+#include <cstdio>
+#include <cstdlib>
 #include "CFileOperation.h"
 CFileOperation::CFileOperation()
 {
@@ -24,7 +26,7 @@ CFileOperation::CFileOperation(std::string strPath, std::string strFileName)
     m_strFileName = strFileName;
     if (!CheckPath(m_strLocalPath))
     {
-       fprintf(stdout, "ERROR: CFileOpeartion path check %s,%s,%d\n", __FILE__,__PRETTY_FUNCTION__,__LINE__);
+        fprintf(stdout, "ERROR: CFileOpeartion path check %s,%s,%d\n", __FILE__,__PRETTY_FUNCTION__,__LINE__);
         perror(m_strLocalPath.c_str());
         exit(EXIT_FAILURE);
     }
@@ -51,6 +53,7 @@ CFileOperation::~CFileOperation()
             fprintf(stderr, "ERROR: CFileOperation file close %s,%s,%d\n", __FILE__,__PRETTY_FUNCTION__,__LINE__);
             perror(m_strFileName.c_str());
         }
+        m_iFileDescriber = -1;
     }
 }
 //bool CFileOperation::InitMutex()
@@ -75,7 +78,7 @@ int CFileOperation::ReadFile(std::string strFileName, void * Buffer, int iOffset
 int CFileOperation::ReadFile(void * Buffer, int iOffset, unsigned uiBufferLength)
 {
     int ireturn = -1;
-    if (-1 == m_iFileDescriber)
+    if (0 > m_iFileDescriber)
     {
         char cfilename[1024] = "\0";
         snprintf(cfilename, sizeof(cfilename), "%s%s%s", m_strLocalPath.c_str(), "/", m_strFileName.c_str());
@@ -85,41 +88,40 @@ int CFileOperation::ReadFile(void * Buffer, int iOffset, unsigned uiBufferLength
             fprintf(stderr, "ERROR: CFileOperation file open %s,%s,%d\n", __FILE__,__PRETTY_FUNCTION__,__LINE__);
             perror(cfilename);
         }
-    }
-    else
-    {
-        off_t ioffset = lseek(m_iFileDescriber, iOffset - 1, SEEK_CUR);
-        if (-1 != ioffset)
-        {
-        ireturn = static_cast<int>(read(m_iFileDescriber, Buffer, uiBufferLength));
-        if (0 > ireturn)
-        {
-            fprintf(stderr, "ERROR: CFileOperation file read %s,%s,%d\n", __FILE__,__PRETTY_FUNCTION__,__LINE__);
-            perror(m_strFileName.c_str());
-        }
-        }
         else
         {
-            fprintf(stderr, "ERROR: CFileOperation file seek %s,%s,%d\n", __FILE__,__PRETTY_FUNCTION__,__LINE__);
-            perror(m_strFileName.c_str());
-        }
-        if (-1 == close(m_iFileDescriber))
-        {
-            fprintf(stderr, "ERROR: CFileOperation file close %s,%s,%d\n", __FILE__,__PRETTY_FUNCTION__,__LINE__);
-            perror(m_strFileName.c_str());
+            off_t ioffset = lseek(m_iFileDescriber, iOffset, SEEK_CUR);
+            if (-1 == ioffset)
+            {
+                fprintf(stderr, "ERROR: CFileOperation file seek %s,%s,%d\n", __FILE__,__PRETTY_FUNCTION__,__LINE__);
+                perror(m_strFileName.c_str());
+            }
         }
     }
+    ireturn = static_cast<int>(read(m_iFileDescriber, Buffer, uiBufferLength));
+    if (0 > ireturn)
+    {
+        fprintf(stderr, "ERROR: CFileOperation file read %s,%s,%d\n", __FILE__,__PRETTY_FUNCTION__,__LINE__);
+        perror(m_strFileName.c_str());
+    }
+    if (-1 == close(m_iFileDescriber))
+    {
+        fprintf(stderr, "ERROR: CFileOperation file close %s,%s,%d\n", __FILE__,__PRETTY_FUNCTION__,__LINE__);
+        perror(m_strFileName.c_str());
+    }
+    m_iFileDescriber = -1;
     return ireturn;
 }
 
 bool CFileOperation::WriteFile(void * Buffer, unsigned uiBufferLength)
 {
     bool breturn = true;
-    if (-1 == m_iFileDescriber)
+    if (0 > m_iFileDescriber)
     {
         char cfilename[1024] = "\0";
-        snprintf(cfilename, sizeof(cfilename), "%s%s%s", m_strLocalPath.c_str(), "\\", m_strFileName.c_str());
+        snprintf(cfilename, sizeof(cfilename), "%s%s%s", m_strLocalPath.c_str(),"/", m_strFileName.c_str());
         m_iFileDescriber = open(cfilename, O_WRONLY|O_CREAT, 0600);
+        //fprintf(stderr, "!!!%s,%s,%d,cfilename=%s\n", __FILE__,__PRETTY_FUNCTION__,__LINE__,cfilename);
         if (0 > m_iFileDescriber)
         {
             fprintf(stderr, "ERROR: CFileOperation file open %s,%s,%d\n", __FILE__,__PRETTY_FUNCTION__,__LINE__);
@@ -128,15 +130,12 @@ bool CFileOperation::WriteFile(void * Buffer, unsigned uiBufferLength)
             return breturn;
         }
     }
-    else
+    int ireturn = static_cast<int>(write(m_iFileDescriber, Buffer,uiBufferLength));
+    if (0 > ireturn)
     {
-        int ireturn = static_cast<int>(write(m_iFileDescriber, Buffer,uiBufferLength));
-        if (0 > ireturn)
-        {
-            fprintf(stderr, "ERROR: CFileOperation file write %s,%s,%d\n", __FILE__,__PRETTY_FUNCTION__,__LINE__);
-            perror(m_strFileName.c_str());
-            breturn = false;
-        }
+        fprintf(stderr, "ERROR: CFileOperation file write %s,%s,%d\n", __FILE__,__PRETTY_FUNCTION__,__LINE__);
+        perror(m_strFileName.c_str());
+        breturn = false;
     }
     return breturn;
 }
