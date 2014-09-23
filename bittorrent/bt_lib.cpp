@@ -153,7 +153,7 @@ bt_info_t parse_torrent(char * torrent_file)
 // return a point to abcde
 // set length be 5
 // move buf -> "fg..."
-char *getIntChars(char*& buf, int &length) {
+char *getIntChars(char*& buf, long &length) {
   char *st = buf;
   while (buf[0] != ':') buf++;
   buf[0] = '\0';
@@ -167,19 +167,19 @@ char *getIntChars(char*& buf, int &length) {
 // buf -> "i12345e6:sf..."
 // return 12345
 // move buf -> "6:sf..."
-int get_iNUMe(char*& buf) {
+long get_iNUMe(char*& buf) {
   char *st = ++buf;
   while (buf[0] != 'e') buf++;
   buf[0] = '\0';
   buf++;
-  return atoi(st);
+  return strtol(st, NULL, 0);//atoi(st);
 }
 
 // use to keep key / value structure
 struct HeadValue {
   char *pValue;
-  int length;
-  int iValue;
+  long length;
+  long iValue;
   //char ctype;
 };
  
