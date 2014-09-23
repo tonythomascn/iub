@@ -17,7 +17,6 @@ bool VERBOSE = false;
 #include "bt_setup.h"
 #include "CLog.h"
 int main (int argc, char * argv[]){
-
   bt_args_t bt_args;
   int i;
 
@@ -57,6 +56,10 @@ int main (int argc, char * argv[]){
   }
 
 
+  
+
+
+
   //main client loop, not required in the milestone
   // printMSG("Starting Main Loop\n");
   while(false){
@@ -79,5 +82,7 @@ int main (int argc, char * argv[]){
 
   }
 
+  // release mememery of torrent
+  // freeTorrent(torrent);
   return 0;
 }

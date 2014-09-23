@@ -286,6 +286,7 @@ bt_info_t parse_torrent_content(void * torrent_content, unsigned int nbytes){
     }
     return torrent_info;
 }
+
 bt_info_t parse_torrent(char * torrent_file)
 {
     if (NULL == torrent_file)
@@ -301,7 +302,7 @@ bt_info_t parse_torrent(char * torrent_file)
         exit(EXIT_FAILURE);
     }
     //read torrent
-    void * buffer = malloc(TORRENT_FILE_MAX_SIZE);
+    char buffer[TORRENT_FILE_MAX_SIZE];
     int buffer_size = 0;
     CFileOperation cfileoperation;
     buffer_size = cfileoperation.ReadFile(torrent_file, buffer, 0, TORRENT_FILE_MAX_SIZE);
@@ -310,7 +311,109 @@ bt_info_t parse_torrent(char * torrent_file)
         LOG("Read nothing from the torrent.", LOG_WARNING);
     }
     //analyze torrent content
-    return parse_torrent_content(buffer, buffer_size);
+    return parse_torrent_content_new(buffer, buffer_size);
 }
+
+
+
+
+
+// buf -> "5:abcdefg..."
+// return a point to abcde
+// set length be 5
+// move buf -> "fg..."
+char *getIntChars(char*& buf, int &length) {
+  char *st = buf;
+  while (buf[0] != ':') buf++;
+  buf[0] = '\0';
+  ++buf;
+  length = atoi(st);
+  st = buf;
+  buf += length;
+  return st;
+}
+
+// buf -> "i12345e6:sf..."
+// return 12345
+// move buf -> "6:sf..."
+int get_iNUMe(char*& buf) {
+  char *st = ++buf;
+  while (buf[0] != 'e') buf++;
+  buf[0] = '\0';
+  buf++;
+  return atoi(st);
+}
+
+
+bt_info_t parse_torrent_content_new(char * buf, int bufSize) {
+  bt_info_t info;
+  // skip first 'd'
+  buf++;
+  char *stopSign = buf + bufSize - 2;
+  bool valid = false;
+  while (buf != stopSign) {
+    // in each loop step, get "head -> value"
+    // now set head ...
+    int length;
+    char *p = getIntChars(buf, length);
+    char head[MAX_ITEM_SIZE];
+    memcpy(head, p, length);
+    head[length] = '\0';
+    std::string sHead(head);
+    //    printMSG(sHead + '\n');
+    // set following to skip url, just record info structure
+    if (sHead == "info" && buf[0] == 'd' && !valid) {
+      buf++;
+      valid = true;
+      continue;
+    }
+
+    // now set value
+    int iValue = -23333;
+    char *pValue = NULL;
+    if (buf[0] == 'i') {
+      iValue = get_iNUMe(buf);
+    } 
+    else if (buf[0] <= '9' && buf[0] >= '0') {
+      pValue = getIntChars(buf, length);
+    }
+
+  
+    if (valid) {
+      if (sHead == "length") {
+	info.length = iValue;
+      }
+      if (sHead == "name") {
+	memcpy(info.name, pValue, length);
+	info.name[length] = '\0';
+      }
+      if (sHead == "piece length") {
+	info.piece_length = iValue;
+      }
+      if (sHead == "pieces") {
+	buf = stopSign;
+      }
+    }// if (valid) ..
+  }// while
+  info.num_pieces =  (info.length + info.piece_length - 1) / info.piece_length;
+  return info;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 

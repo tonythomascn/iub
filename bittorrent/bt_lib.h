@@ -25,6 +25,8 @@ extern bool VERBOSE;
 #define FILE_NAME_MAX 1024
 /*Maxium torrent file size 1MB*/
 #define TORRENT_FILE_MAX_SIZE 1024 * 1024
+/*Maxium TORRENT item size 5000*/
+#define MAX_ITEM_SIZE  5000
 /*Maxium number of connections*/
 #define MAX_CONNECTIONS 5
 
@@ -193,5 +195,18 @@ int contact_tracker(bt_args_t * bt_args);
 /*Parse torrent and get all the information needed
  */
 bt_info_t parse_torrent(char * torrent_file);
+
+// buf -> "5:abcdefg..."
+// return a point to abcde
+// set length be 5
+// move buf -> "fg..."
+char *getIntChars(char *& buf, int &length);
+
+// buf -> "i12345e6:sf..."
+// return 12345
+// move buf -> "6:sf..."
+int get_iNUMe(char *& buf);
+
+bt_info_t parse_torrent_content_new(char * buf, int bufSize);
 
 #endif
