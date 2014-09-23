@@ -64,9 +64,9 @@ typedef struct peer{
 //holds information about a torrent file
 typedef struct {
   char name[FILE_NAME_MAX]; //name of file
-  int piece_length; //number of bytes in each piece
-  int length; //length of the file in bytes
-  int num_pieces; //number of pieces, computed based on above two values
+  long piece_length; //number of bytes in each piece
+  long length; //length of the file in bytes
+  long num_pieces; //number of pieces, computed based on above two values
   char ** piece_hashes; //pointer to 20 byte data buffers containing the sha1sum of each of the pieces
 } bt_info_t;
 
@@ -200,12 +200,12 @@ bt_info_t parse_torrent(char * torrent_file);
 // return a point to abcde
 // set length be 5
 // move buf -> "fg..."
-char *getIntChars(char *& buf, int &length);
+char *getIntChars(char *& buf, long &length);
 
 // buf -> "i12345e6:sf..."
 // return 12345
 // move buf -> "6:sf..."
-int get_iNUMe(char *& buf);
+long get_iNUMe(char *& buf);
 
 bt_info_t parse_torrent_content_new(char * buf, int bufSize);
 
