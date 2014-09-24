@@ -2,6 +2,8 @@
 ## Classes support
 We need several C++ classes to support our developement of the BitTorrent Client.
 Here is a tentative list:
+### **CThread** for base thread class
+provides virtual thread interface and thread safe mechanism.
 
 ### **CFileOperation** for I/O supports
 provides general I/O supports, it will support
@@ -11,6 +13,12 @@ safe read/write with elegant exeption handling.
 C++ wrapper for a set of socket functions
 support connecting, sending data, receiving data etc.
 provide elegant exception handling.
+
+### **CPeer** for peer access
+provides interfaces to access peers, like handshake, download and upload.
+
+### **CPeerManager** for peers and files management
+manages files queue and CPeers queue in every file, provides status of download and upload, and stores user informations.
 
 ### **CLog** for Log processing
 Generate/Parse logs, with friendly interface.
