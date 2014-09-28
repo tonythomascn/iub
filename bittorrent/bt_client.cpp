@@ -11,55 +11,58 @@
 #include <sys/types.h>
 #include <signal.h>
 
+bool VERBOSE = false;
+
 #include "bt_lib.h"
 #include "bt_setup.h"
 #include "CLog.h"
 int main (int argc, char * argv[]){
-
   bt_args_t bt_args;
   int i;
 
   parse_args(&bt_args, argc, argv);
-    CLog.Init(bt_args.log_file, LOG_NOTIFY);
-  if(bt_args.verbose){
-    printf("Args:\n");
-    printf("verbose: %d\n",bt_args.verbose);
-    printf("save_file: %s\n",bt_args.save_file);
-    printf("log_file: %s\n",bt_args.log_file);
-    printf("torrent_file: %s\n", bt_args.torrent_file);
+  CLog.Init(bt_args.log_file, LOG_NOTIFY);
 
-    for(i=0;i<MAX_CONNECTIONS;i++){
+  // set global variable
+  if(bt_args.verbose){
+    VERBOSE = true;
+  }
+
+  //read and parse the torrent file here
+  // LOG("Starting to parse torrent file...", LOG_NOTIFY);
+  bt_info_t torrent = parse_torrent(bt_args.torrent_file);
+  printMSG("Parsing .torrent file ...  DONE!\n");
+// // print args, not require in the milestone
+//   printMSG("Args:\n");
+//   printMSG("verbose: %d\n", bt_args.verbose);
+//   printMSG("save_file: %s\n", bt_args.save_file);
+//   printMSG("log_file: %s\n", bt_args.log_file);
+//   printMSG("torrent_file: %s\n", bt_args.torrent_file);
+
+  // print out the torrent file arguments here
+  printMSG("\nTorrent INFO:\n");
+  printMSG("name: %s\n", torrent.name);
+  printMSG("piece_length: %ld bytes\n", torrent.piece_length);
+  printMSG("length: %ld bytes\n", torrent.length);
+  printMSG("num_pieces: %ld\n", torrent.num_pieces);
+  printMSG("\n");
+  releaseInfo(&torrent);
+
+  if(VERBOSE){
+    for(i=0; i<MAX_CONNECTIONS; i++){
       if(bt_args.peers[i] != NULL)
         print_peer(bt_args.peers[i]);
     }
   }
 
-  //read and parse the torrent file here
-    LOG("Starting to parse torrent file...", LOG_NOTIFY);
-    bt_info_t torrent = parse_torrent(bt_args.torrent_file);
-   /*
-    //holds information about a torrent file
-    typedef struct {
-    char name[FILE_NAME_MAX]; //name of file
-    int piece_length; //number of bytes in each piece
-    int length; //length of the file in bytes
-    int num_pieces; //number of pieces, computed based on above two values
-    char ** piece_hashes; //pointer to 20 byte data buffers containing the sha1sum of each of the pieces
-    } bt_info_t;
-    */
-  if(bt_args.verbose){
-      printf("Torrent INFO:\n");
-      printf("name: %s\n", torrent.name);
-      printf("piece_length: %d bytes\n", torrent.piece_length);
-      printf("length: %d bytes\n", torrent.length);
-      printf("num_pieces: %d\n", torrent.num_pieces);
-      printf("\n");
-    // print out the torrent file arguments here
-  }
 
-  //main client loop
-  printf("Starting Main Loop\n");
-  while(1){
+  
+
+
+
+  //main client loop, not required in the milestone
+  // printMSG("Starting Main Loop\n");
+  while(false){
 
     //try to accept incoming connection from new peer
        
@@ -79,5 +82,7 @@ int main (int argc, char * argv[]){
 
   }
 
+  // release mememery of torrent
+  // freeTorrent(torrent);
   return 0;
 }

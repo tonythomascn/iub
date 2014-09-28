@@ -6,9 +6,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
-
+#include <stdarg.h>
 #include <poll.h>
-
+#include <string>
 //networking stuff
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -17,11 +17,16 @@
 
 #include "bt_lib.h"
 
+// control the verbose output
+// defined in bt_client
+extern bool VERBOSE;
 
 /*Maximum file name size, to make things easy*/
 #define FILE_NAME_MAX 1024
 /*Maxium torrent file size 1MB*/
 #define TORRENT_FILE_MAX_SIZE 1024 * 1024
+/*Maxium TORRENT item size 5000*/
+#define MAX_ITEM_SIZE  5000
 /*Maxium number of connections*/
 #define MAX_CONNECTIONS 5
 
@@ -59,9 +64,9 @@ typedef struct peer{
 //holds information about a torrent file
 typedef struct {
   char name[FILE_NAME_MAX]; //name of file
-  int piece_length; //number of bytes in each piece
-  int length; //length of the file in bytes
-  int num_pieces; //number of pieces, computed based on above two values
+  long piece_length; //number of bytes in each piece
+  long length; //length of the file in bytes
+  long num_pieces; //number of pieces, computed based on above two values
   char ** piece_hashes; //pointer to 20 byte data buffers containing the sha1sum of each of the pieces
 } bt_info_t;
 
@@ -127,6 +132,12 @@ typedef struct bt_msg{
 } bt_msg_t;
 
 
+// print msg to std::cout when VERBOSE is true
+// for error, should use perror etc.
+bool printMSG(std::string msg);
+// take the same args as printf
+// print to standard output when VERBOSE is true
+bool printMSG(const char *fmt, ...);
 
 
 
@@ -185,4 +196,19 @@ int contact_tracker(bt_args_t * bt_args);
  */
 bt_info_t parse_torrent(char * torrent_file);
 
+// buf -> "5:abcdefg..."
+// return a point to abcde
+// set length be 5
+// move buf -> "fg..."
+char *getIntChars(char *& buf, long &length);
+
+// buf -> "i12345e6:sf..."
+// return 12345
+// move buf -> "6:sf..."
+long get_iNUMe(char *& buf);
+
+bt_info_t parse_torrent_content_new(char * buf, int bufSize);
+
+// clean the memory of bt_info_t info
+void releaseInfo(bt_info_t *);
 #endif
