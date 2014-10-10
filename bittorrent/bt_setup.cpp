@@ -186,7 +186,7 @@ void parse_args(bt_args_t * bt_args, int argc,  char * argv[]){
 
   //copy torrent file over
   strncpy(bt_args->torrent_file,argv[0],FILE_NAME_MAX);
-
+  //parsing the torrent file will down in main function to avoid malloc()
   return ;
 }
 
