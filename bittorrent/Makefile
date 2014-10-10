@@ -22,6 +22,8 @@ all:		$(EXECUTABLE)
 
 clean:  
 	$(RM) *.o *~ 
+tar:
+	tar -cvf bt_client.tar *.h *.cpp *.md *.torrent Makefile
 
 clobber: clean
 	$(RM) $(EXECUTABLE)
