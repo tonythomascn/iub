@@ -83,6 +83,6 @@ int main (int argc, char * argv[]){
   }
 
   // release mememery of torrent
-  // freeTorrent(torrent);
+  releaseInfo(&torrent);
   return 0;
 }
