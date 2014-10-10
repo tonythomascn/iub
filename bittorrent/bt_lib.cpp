@@ -272,6 +272,7 @@ void releaseInfo(bt_info_t *info) {
   char **tmp = info->piece_hashes;
   for (int i = 0; i < info->num_pieces; ++i)
     free(tmp[i]);
+  free(tmp);
 }
 
 

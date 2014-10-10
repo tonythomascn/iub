@@ -21,8 +21,11 @@ int main (int argc, char * argv[]){
   int i;
 
   parse_args(&bt_args, argc, argv);
+  // parse the torrent file
+  
   CLog.Init(bt_args.log_file, LOG_NOTIFY);
-
+  bt_info_t torrent = parse_torrent(bt_args.torrent_file);
+  bt_args.bt_info = &torrent;
   // set global variable
   if(bt_args.verbose){
     VERBOSE = true;
@@ -30,23 +33,24 @@ int main (int argc, char * argv[]){
 
   //read and parse the torrent file here
   // LOG("Starting to parse torrent file...", LOG_NOTIFY);
-  bt_info_t torrent = parse_torrent(bt_args.torrent_file);
-  printMSG("Parsing .torrent file ...  DONE!\n");
-// // print args, not require in the milestone
-//   printMSG("Args:\n");
-//   printMSG("verbose: %d\n", bt_args.verbose);
-//   printMSG("save_file: %s\n", bt_args.save_file);
-//   printMSG("log_file: %s\n", bt_args.log_file);
-//   printMSG("torrent_file: %s\n", bt_args.torrent_file);
+  
+  
+  //  printMSG("Parsing .torrent file ...  DONE!\n");
+  printMSG("-------------------- Args -----------------------\n");
+  printMSG("verbose: %d\n", bt_args.verbose);
+  printMSG("save_file: %s\n", bt_args.save_file);
+  printMSG("log_file: %s\n", bt_args.log_file);
+  printMSG("torrent_file: %s\n", bt_args.torrent_file);
 
   // print out the torrent file arguments here
-  printMSG("\nTorrent INFO:\n");
-  printMSG("name: %s\n", torrent.name);
-  printMSG("piece_length: %ld bytes\n", torrent.piece_length);
-  printMSG("length: %ld bytes\n", torrent.length);
-  printMSG("num_pieces: %ld\n", torrent.num_pieces);
-  printMSG("\n");
-  releaseInfo(&torrent);
+  // printMSG("\nTorrent INFO:\n");
+  // printMSG("name: %s\n", torrent.name);
+  // printMSG("piece_length: %ld bytes\n", torrent.piece_length);
+  // printMSG("length: %ld bytes\n", torrent.length);
+  // printMSG("num_pieces: %ld\n", torrent.num_pieces);
+  // printMSG("\n");
+  
+  releaseInfo(bt_args.bt_info);
 
   if(VERBOSE){
     for(i=0; i<MAX_CONNECTIONS; i++){
@@ -83,6 +87,5 @@ int main (int argc, char * argv[]){
   }
 
   // release mememery of torrent
-  releaseInfo(&torrent);
   return 0;
 }
