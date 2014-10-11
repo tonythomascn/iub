@@ -81,6 +81,7 @@ typedef struct {
 //holds all the agurments and state for a running the bt client
 typedef struct {
   int verbose; //verbose level
+  char mode;
   char save_file[FILE_NAME_MAX];//the filename to save to
   FILE * f_save;
   char log_file[FILE_NAME_MAX];//the log file

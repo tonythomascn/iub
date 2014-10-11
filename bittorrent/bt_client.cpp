@@ -42,9 +42,6 @@ int main (int argc, char * argv[]){
     VERBOSE = true;
   }
 
-  // suppose now I am a seeder
-  SeederManager seederM (&bt_args);
-  //seederM.acceptLeecher();
 
   
   // LOG("Starting to parse torrent file...", LOG_NOTIFY);
@@ -74,6 +71,18 @@ int main (int argc, char * argv[]){
     }
   }
 
+
+  // now create manager for peer
+  if (bt_args.mode == 's') {
+    // run as seeder mode
+    SeederManager seederM (&bt_args);
+    seederM.acceptLeecher();
+  }
+  else {
+    // run as leecher mode
+    LeecherManager leecherM (&bt_args);
+    leecherM.connectSeeder();
+  }
 
   
   

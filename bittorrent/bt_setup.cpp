@@ -31,6 +31,7 @@ void usage(FILE * file){
           "                \t use this peer instead, ip:port (ip or hostname)\n"
           "                \t (include multiple -p for more than 1 peer)\n"
           "  -I id         \t Set the node identifier to id (dflt: random)\n"
+          "  -m l|s        \t set running mode, l - leecher, s - seeder, (dflt: seeder)\n"
           "  -v            \t verbose, print additional verbose info\n");
 }
 
@@ -118,6 +119,8 @@ void parse_args(bt_args_t * bt_args, int argc,  char * argv[]){
   strcpy(bt_args->ip, "localhost");
   bt_args->port = 0;
 
+  // default running mode, set as seeder
+  bt_args->mode = 's';
   //null save_file, log_file and torrent_file
   memset(bt_args->save_file,0x00,FILE_NAME_MAX);
   memset(bt_args->torrent_file,0x00,FILE_NAME_MAX);
@@ -138,7 +141,7 @@ void parse_args(bt_args_t * bt_args, int argc,  char * argv[]){
 
   bt_args->id[0] = '0';
   
-  while ((ch = getopt(argc, argv, "hp:s:l:vI:b:")) != -1) {
+  while ((ch = getopt(argc, argv, "hp:s:l:vI:b:m:")) != -1) {
     switch (ch) {
     case 'h': //help
       usage(stdout);
@@ -152,6 +155,9 @@ void parse_args(bt_args_t * bt_args, int argc,  char * argv[]){
       break;
     case 'b': //-b ip
       strncpy(bt_args->ip, optarg, MAX_IP);
+      break;
+    case 'm': //-b l|s
+      bt_args->mode = optarg[0];
       break;
 
     case 'l': //log file
