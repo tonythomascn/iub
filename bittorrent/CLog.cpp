@@ -77,7 +77,7 @@ bool CLog::Log(std::string strMessage)
     }
     else
     {
-        fprintf(stderr, "ERROR: message is NULL %s,%s,%d\n", __FILE__,__PRETTY_FUNCTION__,__LINE__);
+        fprintf(stderr, "ERROR: message is empty %s,%s,%d\n", __FILE__,__PRETTY_FUNCTION__,__LINE__);
         perror(strMessage.c_str());
         breturn = false;
     }
@@ -128,7 +128,7 @@ void CLog::Log(std::string strMessage, LogLevel emLogLevel)
     }
     else
     {
-        fprintf(stderr, "ERROR: CLog message is NULL %s,%s,%d\n", __FILE__,__PRETTY_FUNCTION__,__LINE__);
+        fprintf(stderr, "ERROR: CLog message is empty %s,%s,%d\n", __FILE__,__PRETTY_FUNCTION__,__LINE__);
         perror(strMessage.c_str());
     }
 }

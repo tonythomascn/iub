@@ -7,7 +7,7 @@
 #include <iostream>
 #include "bt_lib.h"
 #include <openssl/sha.h>
-
+#include <fcntl.h>
 SeederManager::SeederManager(bt_args_t *btArg) {
 	// set temp peer to represent this seeder
 	peer_t thisPeer;
@@ -18,21 +18,30 @@ SeederManager::SeederManager(bt_args_t *btArg) {
 
 	// create a reliable stream socket using TCP
 	if ((sockid = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-		std::cerr << "Failed to open the socket!\n";
-		exit(1);
+		std::cerr << "Failed to open socket!\n";
+		throw "Failed to open socket!";
 	}
 	printMSG("Opening the socket ... OK!\n");
-	
-        int flags; 
-	/* Set socket to non-blocking */ 
+
+	int flags; 
+	/* Set socket to non-blocking */
 	if ((flags = fcntl(sockid, F_GETFL, 0)) < 0) 
 	{ 
 		/* Handle error */ 
+		std::cerr << "Failed to set socket into nonblocking mode!\n";
+		if (-1 != sockid)
+			close(sockid);
+		throw "Failed to get socket flag!";
 	} 
 
 	if (fcntl(sockid, F_SETFL, flags | O_NONBLOCK) < 0) 
 	{ 
 		/* Handle error */ 
+		std::cerr << "Failed to set socket into nonblocking mode!\n";
+		if (-1 != sockid)
+			close(sockid);
+		throw "Failed to set socket into nonblocking mode!";
+
 	}
 
 	// bind the sock
@@ -41,13 +50,15 @@ SeederManager::SeederManager(bt_args_t *btArg) {
 		std::cerr << "Failed to bind the port, check you input!\n";
 		if (-1 != sockid)
 			close(sockid);
-		exit(1);
+		throw "Failed to bind the port!";
 	}
 	else {
 		// obtain the port number
 		if (getsockname(sockid, (struct sockaddr *)&seederAddr, &socklen) < 0) {
 			std::cerr << "Failed to obtain ip:port for this client!\n";
-			exit(0);
+			if (-1 != sockid)
+				close(sockid);
+			throw "Failed to obtain port for this client!";
 		};
 		btArg->port = seederAddr.sin_port;
 		// recalc the id using new port number
@@ -64,7 +75,7 @@ SeederManager::SeederManager(bt_args_t *btArg) {
 			std::cerr << "Failed to listen on server socket.\n";
 			if (-1 != sockid)
 				close(sockid);
-			exit(1);
+			throw "Failed to listen on this socket!";
 		}
 		printMSG("Listening on the server socket ... OK!\n");
 	}
@@ -83,7 +94,6 @@ int SeederManager::acceptLeecher() {
 	int leecherSock = accept(sockid, (struct sockaddr *) &leecherAddr, &addrLen);
 	if (leecherSock < 0) {
 		std::cerr << "Failed to accept a new leecher!\n";
-		exit(1);
 	}
 	return leecherSock;
 }
@@ -103,37 +113,63 @@ LeecherManager::LeecherManager(bt_args_t *btArg) {
 	args = btArg;
 }
 
-bool LeecherManager::connectSeeder() {
+bool LeecherManager::connectSeeders() {
 	for (int i = 0; i < MAX_CONNECTIONS; ++i) 
 		if (args->peers[i] != NULL) {
 			peer_t *peerP = args->peers[i];
-			if (! connectSeeder(peerP->sockaddr)) {
-				std::cerr << "Failed to connecet to ..." << std::endl;
-				exit(1);
+			try {
+				connectSeeder(peerP->sockaddr);
+			} catch (const char* msg) {
+				std::cerr << msg << std::endl;
 			}
 		}
 	return true;
 }
 
 bool LeecherManager::connectSeeder(struct sockaddr_in seederAddr) {
+	bool breturn = false;
 	// create socket
 	if (sockfd == -1) {
 		sockfd = socket(AF_INET, SOCK_STREAM, 0);
 		if (sockfd == -1) {
-			std::cerr << "Failed to create socket" << std::endl;
-			return false;
+			//std::cerr << "Failed to create socket" << std::endl;
+			throw "Failed to create socket!";
 		}
 	}
 
+	int flags;
+	/* Set socket to non-blocking */
+	if ((flags = fcntl(sockfd, F_GETFL, 0)) < 0)
+	{
+		/* Handle error */
+		//std::cerr << "Failed to set socket into nonblocking mode!\n";
+		if (-1 != sockfd)
+			close(sockfd);
+		throw "Failed to get socket flag!";
+	}
+
+	if (fcntl(sockfd, F_SETFL, flags | O_NONBLOCK) < 0)
+	{
+		/* Handle error */
+		//std::cerr << "Failed to set socket into nonblocking mode!\n";
+		if (-1 != sockfd)
+			close(sockfd);
+		throw "Failed to set socket into nonblocking mode!";
+
+	}
 
 	// connect to a seeder
 	int status = connect(sockfd, (struct sockaddr *)&seederAddr, sizeof(seederAddr));
 	if (status < 0) {
-		std::cerr << "Failed to connect to the seeder!" << std::endl;
-		return false;
+		//std::cerr << "Failed to connect to the seeder!" << std::endl;
+		throw "Failed to connect to seeder!";
 	}
-	printMSG("Connecting to the seeder ... OK!\n");
-	return true;
+	else{
+
+		printMSG("Connecting to the seeder ... OK!\n");
+		breturn = true;
+	}
+	return breturn;
 }
 
 
