@@ -10,6 +10,14 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <signal.h>
+//#include "Peer.h"
+// TODO:
+//    - release memeory of bt_args
+//    - ?
+
+
+
+
 
 bool VERBOSE = false;
 
@@ -24,14 +32,21 @@ int main (int argc, char * argv[]){
   // parse the torrent file
   
   CLog.Init(bt_args.log_file, LOG_NOTIFY);
+  
+  //read and parse the torrent file here
   bt_info_t torrent = parse_torrent(bt_args.torrent_file);
   bt_args.bt_info = &torrent;
+  
   // set global variable
   if(bt_args.verbose){
     VERBOSE = true;
   }
 
-  //read and parse the torrent file here
+  // suppose now I am a seeder
+  //SeederManager seederM = new SeederManager()
+
+
+  
   // LOG("Starting to parse torrent file...", LOG_NOTIFY);
   
   
@@ -41,16 +56,16 @@ int main (int argc, char * argv[]){
   printMSG("save_file: %s\n", bt_args.save_file);
   printMSG("log_file: %s\n", bt_args.log_file);
   printMSG("torrent_file: %s\n", bt_args.torrent_file);
-
+  printMSG("ip: %s\n", bt_args.ip);
   // print out the torrent file arguments here
-  // printMSG("\nTorrent INFO:\n");
-  // printMSG("name: %s\n", torrent.name);
-  // printMSG("piece_length: %ld bytes\n", torrent.piece_length);
-  // printMSG("length: %ld bytes\n", torrent.length);
-  // printMSG("num_pieces: %ld\n", torrent.num_pieces);
-  // printMSG("\n");
+  printMSG("\nTorrent INFO:\n");
+  printMSG("name: %s\n", torrent.name);
+  printMSG("piece_length: %ld bytes\n", torrent.piece_length);
+  printMSG("length: %ld bytes\n", torrent.length);
+  printMSG("num_pieces: %ld\n", torrent.num_pieces);
+  printMSG("\n");
   
-  releaseInfo(bt_args.bt_info);
+  
 
   if(VERBOSE){
     for(i=0; i<MAX_CONNECTIONS; i++){
@@ -61,7 +76,7 @@ int main (int argc, char * argv[]){
 
 
   
-
+  
 
 
   //main client loop, not required in the milestone
@@ -69,7 +84,7 @@ int main (int argc, char * argv[]){
   while(false){
 
     //try to accept incoming connection from new peer
-       
+    
     
     //poll current peers for incoming traffic
     //   write pieces to files
@@ -87,5 +102,6 @@ int main (int argc, char * argv[]){
   }
 
   // release mememery of torrent
+  releaseInfo(bt_args.bt_info);
   return 0;
 }

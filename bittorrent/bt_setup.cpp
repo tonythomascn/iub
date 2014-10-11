@@ -59,8 +59,8 @@ void __parse_peer(peer_t * peer, char * peer_st){
   for(word = strtok(parse_str, sep), i=0; 
       (word && i < 3); 
       word = strtok(NULL,sep), i++){
-
-    printf("%d:%s\n",i,word);
+    //print the parsed peer
+    //printf("%d:%s\n",i,word);
     switch(i){
     case 0://id
       ip = word;
@@ -91,7 +91,6 @@ void __parse_peer(peer_t * peer, char * peer_st){
 
   //build the object we need
   init_peer(peer, id, ip, port);
-  
   //free extra memory
   free(parse_str);
 
@@ -135,7 +134,7 @@ void parse_args(bt_args_t * bt_args, int argc,  char * argv[]){
 
   bt_args->id = 0;
   
-  while ((ch = getopt(argc, argv, "hp:s:l:vI:")) != -1) {
+  while ((ch = getopt(argc, argv, "hp:s:l:vI:b:")) != -1) {
     switch (ch) {
     case 'h': //help
       usage(stdout);
@@ -147,6 +146,10 @@ void parse_args(bt_args_t * bt_args, int argc,  char * argv[]){
     case 's': //save file
       strncpy(bt_args->save_file,optarg,FILE_NAME_MAX);
       break;
+    case 'b': //-b ip
+      strncpy(bt_args->ip, optarg, MAX_IP);
+      break;
+
     case 'l': //log file
       strncpy(bt_args->log_file,optarg,FILE_NAME_MAX);
       break;
