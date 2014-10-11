@@ -232,6 +232,8 @@ void recusiveParse(char*& buf, HeadValue &hv, bt_info_t& info) {
 	    char *hashBuf = (char *) malloc(2 + ID_SIZE * sizeof(char));
 	    memcpy(hashBuf, i * ID_SIZE + hv.pValue, ID_SIZE);
 	    hashBuf[ID_SIZE] = '\0';
+	    //puts(hashBuf);
+	    //puts("\n----------------------------\n");
 	    info.piece_hashes[i] = hashBuf;
 	  }
 	}
@@ -267,9 +269,10 @@ bt_info_t parse_torrent_content_new(char * buf, int bufSize) {
 
 // clean the memory of info
 void releaseInfo(bt_info_t *info) {
+  char **tmp = info->piece_hashes;
   for (int i = 0; i < info->num_pieces; ++i)
-    free(info->piece_hashes[i]);
-  free(info->piece_hashes);
+    free(tmp[i]);
+  free(tmp);
 }
 
 

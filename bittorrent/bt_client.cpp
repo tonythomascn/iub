@@ -10,6 +10,14 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <signal.h>
+#include "Peer.h"
+// TODO:
+//    - release memeory of bt_args
+//    - ?
+
+
+
+
 
 bool VERBOSE = false;
 
@@ -21,43 +29,72 @@ int main (int argc, char * argv[]){
   int i;
 
   parse_args(&bt_args, argc, argv);
+  // parse the torrent file
+  
   CLog.Init(bt_args.log_file, LOG_NOTIFY);
-
+  
+  //read and parse the torrent file here
+  bt_info_t torrent = parse_torrent(bt_args.torrent_file);
+  bt_args.bt_info = &torrent;
+  
   // set global variable
   if(bt_args.verbose){
     VERBOSE = true;
   }
 
-  //read and parse the torrent file here
-  // LOG("Starting to parse torrent file...", LOG_NOTIFY);
-  bt_info_t torrent = parse_torrent(bt_args.torrent_file);
-  printMSG("Parsing .torrent file ...  DONE!\n");
-// // print args, not require in the milestone
-//   printMSG("Args:\n");
-//   printMSG("verbose: %d\n", bt_args.verbose);
-//   printMSG("save_file: %s\n", bt_args.save_file);
-//   printMSG("log_file: %s\n", bt_args.log_file);
-//   printMSG("torrent_file: %s\n", bt_args.torrent_file);
-
-  // print out the torrent file arguments here
-  printMSG("\nTorrent INFO:\n");
-  printMSG("name: %s\n", torrent.name);
-  printMSG("piece_length: %ld bytes\n", torrent.piece_length);
-  printMSG("length: %ld bytes\n", torrent.length);
-  printMSG("num_pieces: %ld\n", torrent.num_pieces);
-  printMSG("\n");
-  releaseInfo(&torrent);
-
-  if(VERBOSE){
-    for(i=0; i<MAX_CONNECTIONS; i++){
-      if(bt_args.peers[i] != NULL)
-        print_peer(bt_args.peers[i]);
-    }
-  }
-
 
   
+  // // LOG("Starting to parse torrent file...", LOG_NOTIFY);
+  
+  
+  // //  printMSG("Parsing .torrent file ...  DONE!\n");
+  // printMSG("-------------------- Args -----------------------\n");
+  // printMSG("verbose: %d\n", bt_args.verbose);
+  // printMSG("save_file: %s\n", bt_args.save_file);
+  // printMSG("log_file: %s\n", bt_args.log_file);
+  // printMSG("torrent_file: %s\n", bt_args.torrent_file);
+  // printMSG("ip: %s\n", bt_args.ip);
+  // // print out the torrent file arguments here
+  // printMSG("\nTorrent INFO:\n");
+  // printMSG("name: %s\n", torrent.name);
+  // printMSG("piece_length: %ld bytes\n", torrent.piece_length);
+  // printMSG("length: %ld bytes\n", torrent.length);
+  // printMSG("num_pieces: %ld\n", torrent.num_pieces);
+  // printMSG("\n");
+  
+  
 
+  // if(VERBOSE){
+  //   for(i=0; i<MAX_CONNECTIONS; i++){
+  //     if(bt_args.peers[i] != NULL)
+  //       print_peer(bt_args.peers[i]);
+  //   }
+  // }
+
+
+  // now create manager for peer
+  if (bt_args.mode == 's') {
+    // run as seeder mode
+    SeederManager seederM (&bt_args);
+    int leecherSock = seederM.acceptLeecher();
+    // send handshake message
+    if (seederM.handshake(leecherSock)) {
+      printMSG("Send handshake mssage to the leecher ... OK!\n");
+    }
+    // after recieve hashshake message from leecherSock
+    // ....
+    // TODO
+    
+  }
+  else {
+    // run as leecher mode
+    LeecherManager leecherM (&bt_args);
+    leecherM.connectSeeder();
+    leecherM.handshake();
+  }
+
+  
+  
 
 
   //main client loop, not required in the milestone
@@ -65,7 +102,7 @@ int main (int argc, char * argv[]){
   while(false){
 
     //try to accept incoming connection from new peer
-       
+    
     
     //poll current peers for incoming traffic
     //   write pieces to files
@@ -83,6 +120,6 @@ int main (int argc, char * argv[]){
   }
 
   // release mememery of torrent
-  // freeTorrent(torrent);
+  releaseInfo(bt_args.bt_info);
   return 0;
 }

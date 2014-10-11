@@ -36,6 +36,13 @@ extern bool VERBOSE;
 /*max port to try and open a listen socket on*/
 #define MAX_PORT 6699
 
+/* size of handshake message */
+#define HANDESHAKE_SIZE (20 + 8 + 20 + 20)
+
+/* max length for an ip*/
+#define MAX_IP 40
+
+
 /*Different BitTorrent Message Types*/
 #define BT_CHOKE 0
 #define BT_UNCHOKE 1
@@ -74,15 +81,18 @@ typedef struct {
 //holds all the agurments and state for a running the bt client
 typedef struct {
   int verbose; //verbose level
+  char mode;
   char save_file[FILE_NAME_MAX];//the filename to save to
   FILE * f_save;
   char log_file[FILE_NAME_MAX];//the log file
   char torrent_file[FILE_NAME_MAX];// *.torrent file
   peer_t * peers[MAX_CONNECTIONS]; // array of peer_t pointers
-  unsigned int id; //this bt_clients id
+  char id[ID_SIZE]; // id for this client
+  //  unsigned int id; //this bt_clients id
   int sockets[MAX_CONNECTIONS]; //Array of possible sockets
   struct pollfd poll_sockets[MAX_CONNECTIONS]; //Array of pollfd for polling for input
-  
+  char ip[MAX_IP]; // to keep the string of an ip
+  int port; // port for this client
   /* set once torrent is parsed */
   bt_info_t * bt_info; //the parsed info for this torrent
   
@@ -196,6 +206,9 @@ int contact_tracker(bt_args_t * bt_args);
  */
 bt_info_t parse_torrent(char * torrent_file);
 
+
+
+
 // buf -> "5:abcdefg..."
 // return a point to abcde
 // set length be 5
@@ -212,3 +225,6 @@ bt_info_t parse_torrent_content_new(char * buf, int bufSize);
 // clean the memory of bt_info_t info
 void releaseInfo(bt_info_t *);
 #endif
+
+
+

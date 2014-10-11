@@ -31,6 +31,7 @@ void usage(FILE * file){
           "                \t use this peer instead, ip:port (ip or hostname)\n"
           "                \t (include multiple -p for more than 1 peer)\n"
           "  -I id         \t Set the node identifier to id (dflt: random)\n"
+          "  -m l|s        \t set running mode, l - leecher, s - seeder, (dflt: seeder)\n"
           "  -v            \t verbose, print additional verbose info\n");
 }
 
@@ -59,8 +60,8 @@ void __parse_peer(peer_t * peer, char * peer_st){
   for(word = strtok(parse_str, sep), i=0; 
       (word && i < 3); 
       word = strtok(NULL,sep), i++){
-
-    printf("%d:%s\n",i,word);
+    //print the parsed peer
+    //printf("%d:%s\n",i,word);
     switch(i){
     case 0://id
       ip = word;
@@ -91,7 +92,6 @@ void __parse_peer(peer_t * peer, char * peer_st){
 
   //build the object we need
   init_peer(peer, id, ip, port);
-  
   //free extra memory
   free(parse_str);
 
@@ -114,7 +114,13 @@ void parse_args(bt_args_t * bt_args, int argc,  char * argv[]){
 
   /* set the default args */
   bt_args->verbose=0; //no verbosity
-  
+
+  // default ip:port
+  strcpy(bt_args->ip, "localhost");
+  bt_args->port = 0;
+
+  // default running mode, set as seeder
+  bt_args->mode = 's';
   //null save_file, log_file and torrent_file
   memset(bt_args->save_file,0x00,FILE_NAME_MAX);
   memset(bt_args->torrent_file,0x00,FILE_NAME_MAX);
@@ -133,9 +139,9 @@ void parse_args(bt_args_t * bt_args, int argc,  char * argv[]){
     bt_args->peers[i] = NULL; //initially NULL
   }
 
-  bt_args->id = 0;
+  bt_args->id[0] = '0';
   
-  while ((ch = getopt(argc, argv, "hp:s:l:vI:")) != -1) {
+  while ((ch = getopt(argc, argv, "hp:s:l:vI:b:m:")) != -1) {
     switch (ch) {
     case 'h': //help
       usage(stdout);
@@ -147,6 +153,13 @@ void parse_args(bt_args_t * bt_args, int argc,  char * argv[]){
     case 's': //save file
       strncpy(bt_args->save_file,optarg,FILE_NAME_MAX);
       break;
+    case 'b': //-b ip
+      strncpy(bt_args->ip, optarg, MAX_IP);
+      break;
+    case 'm': //-b l|s
+      bt_args->mode = optarg[0];
+      break;
+
     case 'l': //log file
       strncpy(bt_args->log_file,optarg,FILE_NAME_MAX);
       break;
@@ -165,7 +178,8 @@ void parse_args(bt_args_t * bt_args, int argc,  char * argv[]){
       __parse_peer(bt_args->peers[n_peers], optarg);
       break;
     case 'I':
-      bt_args->id = atoi(optarg);
+      //bt_args->id = atoi(optarg);
+      strncpy(bt_args->id, optarg, ID_SIZE);
       break;
     default:
       fprintf(stderr,"ERROR: Unknown option '-%c'\n",ch);
@@ -186,7 +200,7 @@ void parse_args(bt_args_t * bt_args, int argc,  char * argv[]){
 
   //copy torrent file over
   strncpy(bt_args->torrent_file,argv[0],FILE_NAME_MAX);
-
+  //parsing the torrent file will down in main function to avoid malloc()
   return ;
 }
 
