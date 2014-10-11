@@ -36,7 +36,7 @@ public:
   // use bt_args to initialize the class
   LeecherManager(bt_args_t *);
   // try to connect to a seeder
-  bool connectSeeder();
+  bool connectSeeders();
   bool handshake();
 private:
   int sockfd;
