@@ -37,7 +37,7 @@ extern bool VERBOSE;
 #define MAX_PORT 6699
 
 /* size of handshake message */
-#define HANDESHAKE_SIZE (20 + 8 + 20 + 20 + 1)
+#define HANDESHAKE_SIZE (20 + 8 + 20 + 20)
 
 /* max length for an ip*/
 #define MAX_IP 40
@@ -208,8 +208,6 @@ bt_info_t parse_torrent(char * torrent_file);
 
 
 
-/* create handshake message */
-int createHandshakeMsg(char *buf, int &len);
 
 // buf -> "5:abcdefg..."
 // return a point to abcde

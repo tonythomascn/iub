@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <iostream>
 #include "bt_lib.h"
-
+#include <openssl/sha.h>
 
 SeederManager::SeederManager(bt_args_t *btArg) {
   // set temp peer to represent this seeder
@@ -46,8 +46,8 @@ SeederManager::SeederManager(bt_args_t *btArg) {
     
     //  do not modify the following, it must be printed out to the user
     //  user then can use the ip:port to run a leecher
-    std::cout << "\nBinding to IP:Port: " << btArg->ip 
-	      << ":" << ntohs(seederAddr.sin_port) << std::endl;
+    std::cout << "\n>>>> Binding to IP:Port: " << btArg->ip 
+	      << ":" << ntohs(seederAddr.sin_port) << "\n" << std::endl;
 
     // set listen to up to  MAX_CONNECTIONS queued connection
     if ( listen(sockid, MAX_CONNECTIONS) < 0 ) {
@@ -78,6 +78,12 @@ int SeederManager::acceptLeecher() {
   return leecherSock;
 }
 
+
+bool SeederManager::handshake(int leecherSock) {
+  char buf[HANDESHAKE_SIZE];
+  createHandshakeMsg(buf, args->bt_info, args->id);
+  return sendData(leecherSock, buf, HANDESHAKE_SIZE);
+}
 
 
 
@@ -110,7 +116,7 @@ bool LeecherManager::connectSeeder(struct sockaddr_in seederAddr) {
   }
   
   
-  // connect to server
+  // connect to a seeder
   int status = connect(sockfd, (struct sockaddr *)&seederAddr, sizeof(seederAddr));
   if (status < 0) {
     std::cerr << "Failed to connect to the seeder!" << std::endl;
@@ -119,6 +125,54 @@ bool LeecherManager::connectSeeder(struct sockaddr_in seederAddr) {
   printMSG("Connecting to the seeder ... OK!\n");
   return true;
 }
+
+
+bool LeecherManager::handshake() {
+  char buf[HANDESHAKE_SIZE];
+  int status = recv(sockfd, buf, HANDESHAKE_SIZE, 0);
+  if (status < 0) {
+    std::cerr << "Failed to handshake!" << std::endl;
+    return false;
+  }
+  buf[20] = '\0';
+  printMSG("Handshaking ... OK! received: %s...\n", buf);
+  return true;
+}
+
+
+bool sendData(int seederSock, char *buf, int n_bytes) {
+  int status = send(seederSock, buf, n_bytes, 0);
+  if (status < 0) {
+    std::cerr << "Failed to send data." << std::endl;
+    return false;
+  }
+  return true;
+}
+
+
+bool createHandshakeMsg(char *buf, bt_info_t *info,  char *id) {
+  // clean buf
+  memset(buf, 0, HANDESHAKE_SIZE);
+  buf[0] = (char) 19;
+  strcpy(buf + 1, "BitTorrent Protocol");
+  unsigned char *data = (unsigned char *) info;
+  unsigned char hash[20];
+  SHA1(data, sizeof(data), hash);
+  char *md = (char *) hash;
+  strncpy(buf + 20 + 8, md, 20);
+  strncpy(buf + 20 +8 + 20, id, ID_SIZE);
+  return true;
+}
+
+// bool recvData(int leecherSock, char *buf, int &n_bytes) {
+//   int status = recv(leecherSock, buf, n_bytes, 0);
+//   if (status < 0) {
+//     std::cerr << "Failed to recieve data." << std::endl;
+//     return false;
+//   }
+//   return true;
+// }
+
 
 
 

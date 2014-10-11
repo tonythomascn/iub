@@ -44,44 +44,53 @@ int main (int argc, char * argv[]){
 
 
   
-  // LOG("Starting to parse torrent file...", LOG_NOTIFY);
+  // // LOG("Starting to parse torrent file...", LOG_NOTIFY);
   
   
-  //  printMSG("Parsing .torrent file ...  DONE!\n");
-  printMSG("-------------------- Args -----------------------\n");
-  printMSG("verbose: %d\n", bt_args.verbose);
-  printMSG("save_file: %s\n", bt_args.save_file);
-  printMSG("log_file: %s\n", bt_args.log_file);
-  printMSG("torrent_file: %s\n", bt_args.torrent_file);
-  printMSG("ip: %s\n", bt_args.ip);
-  // print out the torrent file arguments here
-  printMSG("\nTorrent INFO:\n");
-  printMSG("name: %s\n", torrent.name);
-  printMSG("piece_length: %ld bytes\n", torrent.piece_length);
-  printMSG("length: %ld bytes\n", torrent.length);
-  printMSG("num_pieces: %ld\n", torrent.num_pieces);
-  printMSG("\n");
+  // //  printMSG("Parsing .torrent file ...  DONE!\n");
+  // printMSG("-------------------- Args -----------------------\n");
+  // printMSG("verbose: %d\n", bt_args.verbose);
+  // printMSG("save_file: %s\n", bt_args.save_file);
+  // printMSG("log_file: %s\n", bt_args.log_file);
+  // printMSG("torrent_file: %s\n", bt_args.torrent_file);
+  // printMSG("ip: %s\n", bt_args.ip);
+  // // print out the torrent file arguments here
+  // printMSG("\nTorrent INFO:\n");
+  // printMSG("name: %s\n", torrent.name);
+  // printMSG("piece_length: %ld bytes\n", torrent.piece_length);
+  // printMSG("length: %ld bytes\n", torrent.length);
+  // printMSG("num_pieces: %ld\n", torrent.num_pieces);
+  // printMSG("\n");
   
   
 
-  if(VERBOSE){
-    for(i=0; i<MAX_CONNECTIONS; i++){
-      if(bt_args.peers[i] != NULL)
-        print_peer(bt_args.peers[i]);
-    }
-  }
+  // if(VERBOSE){
+  //   for(i=0; i<MAX_CONNECTIONS; i++){
+  //     if(bt_args.peers[i] != NULL)
+  //       print_peer(bt_args.peers[i]);
+  //   }
+  // }
 
 
   // now create manager for peer
   if (bt_args.mode == 's') {
     // run as seeder mode
     SeederManager seederM (&bt_args);
-    seederM.acceptLeecher();
+    int leecherSock = seederM.acceptLeecher();
+    // send handshake message
+    if (seederM.handshake(leecherSock)) {
+      printMSG("Send handshake mssage to the leecher ... OK!\n");
+    }
+    // after recieve hashshake message from leecherSock
+    // ....
+    // TODO
+    
   }
   else {
     // run as leecher mode
     LeecherManager leecherM (&bt_args);
     leecherM.connectSeeder();
+    leecherM.handshake();
   }
 
   
