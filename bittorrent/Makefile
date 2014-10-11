@@ -1,8 +1,4 @@
- ## Copyright (C) 2014 - Tony Liu
- ## Any question, please contact me.
- ## Email : xl41@indiana.edu
-  
- #common rules
+#common rules
 CFLAGS	=   -g -Wall
 CLINK	= 	-c -o
 CC      = 	cc
@@ -14,7 +10,7 @@ INCLUDE	=
 LDFLAGS =
 LIB	= $(SYSLIBS) -lcrypto -lpthread
 
-FTPCLIENTOBJ	= bt_client.o bt_lib.o bt_setup.o CLog.o CFileOperation.o
+FTPCLIENTOBJ	= bt_client.o bt_lib.o bt_setup.o CLog.o CFileOperation.o Peer.o
 
 EXECUTABLE	= bt-client
 

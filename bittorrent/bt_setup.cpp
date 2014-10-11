@@ -113,7 +113,11 @@ void parse_args(bt_args_t * bt_args, int argc,  char * argv[]){
 
   /* set the default args */
   bt_args->verbose=0; //no verbosity
-  
+
+  // default ip:port
+  strcpy(bt_args->ip, "localhost");
+  bt_args->port = 0;
+
   //null save_file, log_file and torrent_file
   memset(bt_args->save_file,0x00,FILE_NAME_MAX);
   memset(bt_args->torrent_file,0x00,FILE_NAME_MAX);
@@ -132,7 +136,7 @@ void parse_args(bt_args_t * bt_args, int argc,  char * argv[]){
     bt_args->peers[i] = NULL; //initially NULL
   }
 
-  bt_args->id = 0;
+  bt_args->id[0] = '0';
   
   while ((ch = getopt(argc, argv, "hp:s:l:vI:b:")) != -1) {
     switch (ch) {
@@ -168,7 +172,8 @@ void parse_args(bt_args_t * bt_args, int argc,  char * argv[]){
       __parse_peer(bt_args->peers[n_peers], optarg);
       break;
     case 'I':
-      bt_args->id = atoi(optarg);
+      //bt_args->id = atoi(optarg);
+      strncpy(bt_args->id, optarg, ID_SIZE);
       break;
     default:
       fprintf(stderr,"ERROR: Unknown option '-%c'\n",ch);

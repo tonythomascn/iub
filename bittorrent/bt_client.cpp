@@ -10,7 +10,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <signal.h>
-//#include "Peer.h"
+#include "Peer.h"
 // TODO:
 //    - release memeory of bt_args
 //    - ?
@@ -43,8 +43,8 @@ int main (int argc, char * argv[]){
   }
 
   // suppose now I am a seeder
-  //SeederManager seederM = new SeederManager()
-
+  SeederManager seederM (&bt_args);
+  //seederM.acceptLeecher();
 
   
   // LOG("Starting to parse torrent file...", LOG_NOTIFY);
