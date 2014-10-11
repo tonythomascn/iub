@@ -11,9 +11,10 @@
 #include <sys/types.h>
 #include <signal.h>
 #include "Peer.h"
+#include "bt_lib.h"
 // TODO:
 //    - release memeory of bt_args
-//    - ?
+//    - update the Readme file
 
 
 
@@ -26,7 +27,7 @@ bool VERBOSE = false;
 #include "CLog.h"
 int main (int argc, char * argv[]){
   bt_args_t bt_args;
-  int i;
+
 
   parse_args(&bt_args, argc, argv);
   // parse the torrent file
@@ -65,7 +66,7 @@ int main (int argc, char * argv[]){
   
 
   // if(VERBOSE){
-  //   for(i=0; i<MAX_CONNECTIONS; i++){
+  //   for(int i=0; i<MAX_CONNECTIONS; i++){
   //     if(bt_args.peers[i] != NULL)
   //       print_peer(bt_args.peers[i]);
   //   }
@@ -76,21 +77,44 @@ int main (int argc, char * argv[]){
   if (bt_args.mode == 's') {
     // run as seeder mode
     SeederManager seederM (&bt_args);
-    int leecherSock = seederM.acceptLeecher();
-    // send handshake message
-    if (seederM.handshake(leecherSock)) {
-      printMSG("Send handshake mssage to the leecher ... OK!\n");
+    
+    while (true) {
+      int n_ready = poll(seederM.poll_sockets, seederM.n_sockets, 30000);
+      
+      if (seederM.poll_sockets[0].events & POLLRDNORM) {
+	// new leecher connection
+	int leecherSock = seederM.acceptLeecher(); // try to accept a new connection
+	if (seederM.handshake(leecherSock)) {  	// send handshake message
+	  printMSG("Send handshake mssage to the leecher ... OK!\n");
+	}
+	if (--n_ready <= 0)  //  no more readable descriptors
+	  continue;
+      }
+      
+      // check data incoming for all leechers
+      for (int i = 1; i < seederM.n_sockets; ++i) {
+	if (seederM.poll_sockets[i].revents & (POLLRDNORM | POLLERR)) {
+	  // read data from sockfd ...
+	}
+      }
+      
+
+
     }
-    // after recieve hashshake message from leecherSock
-    // ....
-    // TODO
+    
+    
+
+
+
+
     
   }
-  else {
-    // run as leecher mode
+  else {   // run as leecher mode
     LeecherManager leecherM (&bt_args);
-    leecherM.connectSeeder();
-    leecherM.handshake();
+    leecherM.connectSeeders();
+    for (int i = 0; i < leecherM.n_sockets; ++i) {
+      leecherM.handshake(leecherM.sockets[i]);
+    }
   }
 
   

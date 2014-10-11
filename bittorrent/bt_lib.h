@@ -89,8 +89,6 @@ typedef struct {
   peer_t * peers[MAX_CONNECTIONS]; // array of peer_t pointers
   char id[ID_SIZE]; // id for this client
   //  unsigned int id; //this bt_clients id
-  int sockets[MAX_CONNECTIONS]; //Array of possible sockets
-  struct pollfd poll_sockets[MAX_CONNECTIONS]; //Array of pollfd for polling for input
   char ip[MAX_IP]; // to keep the string of an ip
   int port; // port for this client
   /* set once torrent is parsed */

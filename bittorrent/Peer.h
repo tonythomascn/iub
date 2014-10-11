@@ -23,6 +23,9 @@ public:
   int acceptLeecher();
   //handshake with the dest leecherSock
   bool handshake(int leecherSock);
+  int n_sockets; // # of sockets
+  int sockets[MAX_CONNECTIONS]; //Array of possible sockets
+  struct pollfd poll_sockets[MAX_CONNECTIONS]; //Array of pollfd for polling for input
 private:
   int sockid;
   bt_args_t *args;
@@ -36,14 +39,15 @@ public:
   // use bt_args to initialize the class
   LeecherManager(bt_args_t *);
   // try to connect to a seeder
-  bool connectSeeder();
-  bool handshake();
+  bool connectSeeders();
+  bool handshake(int sockfd);
+  int n_sockets; // # of sockets
+  int sockets[MAX_CONNECTIONS]; //Array of possible sockets
+  struct pollfd poll_sockets[MAX_CONNECTIONS]; //Array of pollfd for polling for input
 private:
-  int sockfd;
   bt_args_t *args;
   bool connectSeeder(struct sockaddr_in);
-  //  bool sendData(int seederSock, char *buf, int n_bytes);
-  //  bool recvData(int seederSock, char *buf, int &n_bytes);
+
 }; 
 
 
@@ -51,8 +55,7 @@ private:
 
 //send data in buf to seederSock with length n_bytes
 bool sendData(int seederSock, char *buf, int n_bytes);  
-// //recieve data into buf, with length at most n_bytes
-// bool recvData(int leecherSock, char *buf, int &n_bytes);
+
 
 /* create handshake message */
 bool createHandshakeMsg(char *buf, bt_info_t *info, char *id);
