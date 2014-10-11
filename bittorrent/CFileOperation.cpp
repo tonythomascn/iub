@@ -1,6 +1,6 @@
 //
 //  CFileOperation.cpp
-//  netcat
+//  bittorrent
 //
 //  Created by Tony Liu on 9/5/14.
 //  Copyright (c) 2014 Tony Liu. All rights reserved.
