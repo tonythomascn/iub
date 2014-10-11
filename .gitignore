@@ -6,3 +6,5 @@ bittorrent.xcodeproj/
 *.xcworkspacedata
 *.xcuserstate
 *.xcscheme
+*.tar
+*.tar.gz
