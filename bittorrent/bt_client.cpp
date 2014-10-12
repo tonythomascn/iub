@@ -12,10 +12,11 @@
 #include <signal.h>
 #include "Peer.h"
 #include "bt_lib.h"
+#include <sys/epoll.h>
+
 // TODO:
 //    - release memeory of bt_args
 //    - update the Readme file
-
 
 
 
@@ -74,51 +75,73 @@ int main (int argc, char * argv[]){
 
 
   // now create manager for peer
-  if (bt_args.mode == 's') {
-    // run as seeder mode
-    SeederManager seederM (&bt_args);
+  if (bt_args.mode == 's') { // run as seeder
+    SeederManager MSeeder (&bt_args);
+    struct epoll_event event;
+    struct epoll_event events[MAX_CONNECTIONS + 5];
+    int sfd = MSeeder.sockid;
+
+    // create epoll
+    int efd = epoll_create1(0);
+    if (efd == -1) {
+      std::cerr << "Failed to create epoll!" << std::endl;
+      exit(1);
+    }
     
+    // add to sfd to efd
+    event.data.fd = sfd;
+    event.events = EPOLLIN | EPOLLET;
+    if (epoll_ctl(efd, EPOLL_CTL_ADD, sfd, &event) < 0) {
+      std::cerr << "Failed to add sfd to efd!" << std::endl;
+      exit(1);
+    }
+
+    // the event loop
     while (true) {
-      int n_ready = poll(seederM.poll_sockets, seederM.n_sockets, 30000);
-      
-      if (seederM.poll_sockets[0].events & POLLRDNORM) {
-	// new leecher connection
-	int leecherSock = seederM.acceptLeecher(); // try to accept a new connection
-	if (seederM.handshake(leecherSock)) {  	// send handshake message
-	  printMSG("Send handshake mssage to the leecher ... OK!\n");
+      int n = epoll_wait(efd, events, MAX_CONNECTIONS, -1);
+      std::cerr << "n = " << n << std::endl;
+      for (int i = 0; i < n; ++i) {
+	// TODO: if err happened 
+	if (sfd == events[i].data.fd) { // if == sfd
+	  int sock = MSeeder.acceptLeecher();
+	  if (make_socket_non_blocking(sock) < 0) {
+	    std::cerr << "Failed to make sock non-block!" << std::endl;
+	    exit(1);
+	  }
+
+	  // add sock into efd
+	  event.data.fd = sock;
+	  event.events = EPOLLIN | EPOLLET;
+	  if (epoll_ctl(efd, EPOLL_CTL_ADD, sock, &event) < 0) {
+	    std::cerr << "Failed to add event to efd!" << std::endl;
+	    exit(1);
+	  }
+
+	  MSeeder.sendHandshake(sock); // send handshake msg to leecher
+	}// if (sfd = ..
+	else { // if != sfd
+	  if (events[i].events & EPOLLIN) {
+	    MSeeder.recvHandshake(events[i].data.fd); // recieve handshake msg from leecher
+	  }
 	}
-	if (--n_ready <= 0)  //  no more readable descriptors
-	  continue;
-      }
-      
-      // check data incoming for all leechers
-      for (int i = 1; i < seederM.n_sockets; ++i) {
-	if (seederM.poll_sockets[i].revents & (POLLRDNORM | POLLERR)) {
-	  // read data from sockfd ...
-	}
-      }
-      
-
-
-    }
-    
-    
-
-
-
-
-    
-  }
-  else {   // run as leecher mode
-    LeecherManager leecherM (&bt_args);
-    leecherM.connectSeeders();
-    for (int i = 0; i < leecherM.n_sockets; ++i) {
-      leecherM.handshake(leecherM.sockets[i]);
-    }
+      }//  for
+    } // while
   }
 
+
+
+  else {  // run as leecher
+    LeecherManager MLeecher (&bt_args);
+    MLeecher.connectSeeders();
+    for (int i = 0; i < MLeecher.n_sockets; ++i) {
+      MLeecher.recvHandshake(MLeecher.sockets[i]);
+      MLeecher.sendHandshake(MLeecher.sockets[i]);
+    }
+  }
   
   
+  
+
 
 
   //main client loop, not required in the milestone

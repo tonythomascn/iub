@@ -17,17 +17,16 @@ class Leecher {
 // manager of a seeder
 class SeederManager {
 public:
-  //bind to ip:port, and link to the parsed bt_args
-  SeederManager(bt_args_t *btArg);
-  // try to accept a new leecher, return leecher sockfd 
-  int acceptLeecher();
-  //handshake with the dest leecherSock
-  bool handshake(int leecherSock);
-  int n_sockets; // # of sockets
-  int sockets[MAX_CONNECTIONS]; //Array of possible sockets
-  struct pollfd poll_sockets[MAX_CONNECTIONS]; //Array of pollfd for polling for input
-private:
+  SeederManager(bt_args_t *btArg);   //bind to ip:port, and link to the parsed bt_args
+  int acceptLeecher();    // try to accept a new leecher, return leecher sockfd 
+  bool sendHandshake(int leecherSock); //send handshake Msg to the dest leecherSock
+  bool recvHandshake(int leecherSock); //recv handshake Msg from leecherSock
+  bool processSock(int sock); // process a given sock, read data and take actions
+  //  int n_sockets; // # of sockets
+  //int sockets[MAX_CONNECTIONS]; //Array of possible sockets
+  //struct pollfd poll_sockets[MAX_CONNECTIONS]; //Array of pollfd for polling for input
   int sockid;
+private:
   bt_args_t *args;
 };
 
@@ -40,10 +39,11 @@ public:
   LeecherManager(bt_args_t *);
   // try to connect to a seeder
   bool connectSeeders();
-  bool handshake(int sockfd);
+  bool sendHandshake(int sockfd);
+  bool recvHandshake(int sockfd);
   int n_sockets; // # of sockets
   int sockets[MAX_CONNECTIONS]; //Array of possible sockets
-  struct pollfd poll_sockets[MAX_CONNECTIONS]; //Array of pollfd for polling for input
+  //struct pollfd poll_sockets[MAX_CONNECTIONS]; //Array of pollfd for polling for input
 private:
   bt_args_t *args;
   bool connectSeeder(struct sockaddr_in);

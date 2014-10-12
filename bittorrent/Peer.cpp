@@ -10,7 +10,7 @@
 
 SeederManager::SeederManager(bt_args_t *btArg) {
   // set default values
-  n_sockets = 0;
+  // n_sockets = 0;
 
 
 
@@ -28,15 +28,14 @@ SeederManager::SeederManager(bt_args_t *btArg) {
     exit(1);
   }
   printMSG("Opening the socket ... OK!\n");
-  // add this sockid into sockets[0]
-  sockets[n_sockets++] = sockid;
+  // // add this sockid into sockets[0]
+  // sockets[n_sockets++] = sockid;
 
-  // add this sockid into poll_sockets[]
-  poll_sockets[0].fd = sockid;
-  poll_sockets[0].events = POLLRDNORM;
-  for (int i = 1; i < MAX_CONNECTIONS; ++i) {
-    poll_sockets[i] = -1; // -1 indicates available entry
-  }
+  // // add this sockid into poll_sockets[]
+  // poll_sockets[0].fd = sockid;
+  // poll_sockets[0].events = POLLIN;
+
+
 
   // bind the sock
   int status = bind(sockid, (struct sockaddr *)&seederAddr, sizeof(struct sockaddr_in));
@@ -47,6 +46,13 @@ SeederManager::SeederManager(bt_args_t *btArg) {
     exit(1);
   }
   else {
+    // make as non-block socket
+    if (make_socket_non_blocking(sockid) == -1) {
+      std::cerr << "Failed to make non-blocking socket!" << std::endl;
+      exit(1);
+    }
+    
+
     // obtain the port number
     if (getsockname(sockid, (struct sockaddr *)&seederAddr, &socklen) < 0) {
       std::cerr << "Failed to obtain ip:port for this client!\n";
@@ -89,20 +95,51 @@ int SeederManager::acceptLeecher() {
     exit(1);
   }
   
-  sockets[n_sockets++] = leecherSock; // add leecherSock into sockets
-  poll_sockets[n_sockets - 1].fd = leecherSock; // save descriptor
-  poll_sockets[n_sockets - 1].events = POLLRDNORM; // set ..
+  // sockets[n_sockets++] = leecherSock; // add leecherSock into sockets
+  // poll_sockets[n_sockets - 1].fd = leecherSock; // save descriptor
+  // poll_sockets[n_sockets - 1].events = POLLIN; // set ..
  
 
   return leecherSock;
 }
 
 
-bool SeederManager::handshake(int leecherSock) {
+bool SeederManager::sendHandshake(int leecherSock) {
   char buf[HANDESHAKE_SIZE];
   createHandshakeMsg(buf, args->bt_info, args->id);
-  return sendData(leecherSock, buf, HANDESHAKE_SIZE);
+  bool status = sendData(leecherSock, buf, HANDESHAKE_SIZE);
+  if (status) {
+    printMSG("Sending handshake msg to leecher ... OK!\n");
+  }
+  return status;
 }
+
+
+
+bool SeederManager::recvHandshake(int leecherSock) {
+  char buf[MAX_BUF_SZIE];
+  int t;
+  bzero(buf, MAX_BUF_SZIE);
+  t = read(leecherSock, buf, MAX_BUF_SZIE);
+  if (t < 0) {
+    std::cerr << "Failed to handshake!" << std::endl;
+    return false;
+  }
+  buf[20] = '\0';
+  if (t > 0)
+    printMSG("Recv handshake msg from with %d... OK! received: %s...\n", leecherSock, buf);
+  return true;
+}
+
+
+
+// bool SeederManager::processSock(int sock) {
+//   read data from sock and take actions
+//   char buf[HANDESHAKE_SIZE];
+//   recv(sock, buf, HANDESHAKE_SIZE, 0)
+// }
+
+
 
 
 
@@ -147,21 +184,36 @@ bool LeecherManager::connectSeeder(struct sockaddr_in seederAddr) {
 }
 
 
-bool LeecherManager::handshake(int sockfd) {
-  char buf[HANDESHAKE_SIZE];
-  int status = recv(sockfd, buf, HANDESHAKE_SIZE, 0);
-  if (status < 0) {
+bool LeecherManager::recvHandshake(int sockfd) {
+  char buf[MAX_BUF_SZIE];
+  int t;
+  bzero(buf, MAX_BUF_SZIE);
+  t = read(sockfd, buf, MAX_BUF_SZIE);
+  if (t < 0) {
     std::cerr << "Failed to handshake!" << std::endl;
     return false;
   }
+  std::cerr << "t = " << t << std::endl;
   buf[20] = '\0';
-  printMSG("Handshaking with %d... OK! received: %s...\n",sockfd, buf);
+  if (t > 0)
+    printMSG("Recv handshake msg from seeder ... OK!\n");
   return true;
+}
+
+bool LeecherManager::sendHandshake(int sockfd) {
+  char buf[MAX_BUF_SZIE];
+  bzero(buf, MAX_BUF_SZIE);
+  createHandshakeMsg(buf, args->bt_info, args->id);
+  bool status = sendData(sockfd, buf, HANDESHAKE_SIZE);
+  if (status) {
+    printMSG("Sending handshake msg to seeder ... OK!\n");
+  }
+  return status;
 }
 
 
 bool sendData(int seederSock, char *buf, int n_bytes) {
-  int status = send(seederSock, buf, n_bytes, 0);
+  int status = write(seederSock, buf, n_bytes);
   if (status < 0) {
     std::cerr << "Failed to send data." << std::endl;
     return false;

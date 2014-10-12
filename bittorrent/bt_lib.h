@@ -14,7 +14,8 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h> 
-
+#include <fcntl.h>
+#include <sys/epoll.h>
 #include "bt_lib.h"
 
 // control the verbose output
@@ -38,6 +39,9 @@ extern bool VERBOSE;
 
 /* size of handshake message */
 #define HANDESHAKE_SIZE (20 + 8 + 20 + 20)
+
+/* max buffer size */
+#define MAX_BUF_SZIE (1024 * 1024)
 
 /* max length for an ip*/
 #define MAX_IP 40
@@ -222,6 +226,12 @@ bt_info_t parse_torrent_content_new(char * buf, int bufSize);
 
 // clean the memory of bt_info_t info
 void releaseInfo(bt_info_t *);
+
+
+// by lgp8819@gmail.com
+int make_socket_non_blocking(int sfd);
+
+
 #endif
 
 
