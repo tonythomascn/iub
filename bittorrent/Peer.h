@@ -2,6 +2,7 @@
 #define _PEER_H_
 #include <netinet/in.h>
 #include "bt_lib.h"
+#include <map>
 
 
 // // class for a seeder
@@ -26,8 +27,11 @@ public:
   //int sockets[MAX_CONNECTIONS]; //Array of possible sockets
   //struct pollfd poll_sockets[MAX_CONNECTIONS]; //Array of pollfd for polling for input
   int sockid;
+  bool sendBitfield(int sock); // send msg of bitfield to sock
+  std::map <int, bool> handshaked; // to mark if a sock has handshaked or not
 private:
   bt_args_t *args;
+  bool createBitfield(char *buf, int &len); // create a msg for bitfield 
 };
 
 
@@ -43,10 +47,13 @@ public:
   bool recvHandshake(int sockfd);
   int n_sockets; // # of sockets
   int sockets[MAX_CONNECTIONS]; //Array of possible sockets
-  //struct pollfd poll_sockets[MAX_CONNECTIONS]; //Array of pollfd for polling for input
+  bool sendRequest(int sock, int index, int begin, int length); // send request msg to sock
+  bool processSock(int sock); // process a sok
+  std::map <int, bool> handshaked;
 private:
   bt_args_t *args;
   bool connectSeeder(struct sockaddr_in);
+  bool createRequest(char *buf, int &len, int index, int begin, int length); // create request msg
 
 }; 
 
@@ -55,6 +62,10 @@ private:
 
 //send data in buf to seederSock with length n_bytes
 bool sendData(int seederSock, char *buf, int n_bytes);  
+
+// read a msg from sock to buf, return true if success, false otherwise
+// the size of buf should be no smaller than MAX_BUF_SZIE
+bool readMSG(int sock, char *buf);
 
 
 /* create handshake message */

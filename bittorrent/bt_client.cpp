@@ -49,20 +49,20 @@ int main (int argc, char * argv[]){
   // // LOG("Starting to parse torrent file...", LOG_NOTIFY);
   
   
-  // //  printMSG("Parsing .torrent file ...  DONE!\n");
-  // printMSG("-------------------- Args -----------------------\n");
-  // printMSG("verbose: %d\n", bt_args.verbose);
-  // printMSG("save_file: %s\n", bt_args.save_file);
-  // printMSG("log_file: %s\n", bt_args.log_file);
-  // printMSG("torrent_file: %s\n", bt_args.torrent_file);
-  // printMSG("ip: %s\n", bt_args.ip);
-  // // print out the torrent file arguments here
-  // printMSG("\nTorrent INFO:\n");
-  // printMSG("name: %s\n", torrent.name);
-  // printMSG("piece_length: %ld bytes\n", torrent.piece_length);
-  // printMSG("length: %ld bytes\n", torrent.length);
-  // printMSG("num_pieces: %ld\n", torrent.num_pieces);
-  // printMSG("\n");
+  //  printMSG("Parsing .torrent file ...  DONE!\n");
+  printMSG("-------------------- Args -----------------------\n");
+  printMSG("verbose: %d\n", bt_args.verbose);
+  printMSG("save_file: %s\n", bt_args.save_file);
+  printMSG("log_file: %s\n", bt_args.log_file);
+  printMSG("torrent_file: %s\n", bt_args.torrent_file);
+  printMSG("ip: %s\n", bt_args.ip);
+  // print out the torrent file arguments here
+  printMSG("\nTorrent INFO:\n");
+  printMSG("name: %s\n", torrent.name);
+  printMSG("piece_length: %ld bytes\n", torrent.piece_length);
+  printMSG("length: %ld bytes\n", torrent.length);
+  printMSG("num_pieces: %ld\n", torrent.num_pieces);
+  printMSG("\n");
   
   
 
@@ -120,8 +120,22 @@ int main (int argc, char * argv[]){
 	  MSeeder.sendHandshake(sock); // send handshake msg to leecher
 	}// if (sfd = ..
 	else { // if != sfd
+	  int sock = events[i].data.fd;
 	  if (events[i].events & EPOLLIN) {
-	    MSeeder.recvHandshake(events[i].data.fd); // recieve handshake msg from leecher
+	    if (!MSeeder.handshaked[sock]) {
+	      MSeeder.recvHandshake(sock); // recieve handshake msg from leecher
+	      MSeeder.handshaked[sock] = true; // marked as handshaked
+	      MSeeder.sendBitfield(sock); // send its bitfield to sock
+	    }
+	    else { // work with handshake leecher
+	      if (!MSeeder.processSock(sock)) {
+		std::cerr << "Failed to process the leecher!" << std::endl;
+		exit(1);
+	      } 
+	      else { 
+		std::cerr << "request processed!" << std::endl;
+	      }
+	    } // else
 	  }
 	}
       }//  for
@@ -146,6 +160,7 @@ int main (int argc, char * argv[]){
     // add all sockfd into efd
     for (int i = 0; i < MLeecher.n_sockets; ++i) {
       int sock = MLeecher.sockets[i];
+      MLeecher.handshaked[sock] = false; // marked as not yet handshaked
       event.data.fd = sock;
       event.events = EPOLLIN | EPOLLET;
       if (make_socket_non_blocking(sock) < 0) {
@@ -166,8 +181,24 @@ int main (int argc, char * argv[]){
       for (int i = 0; i < n; ++i) {
 	int sock = events[i].data.fd;
 	if (events[i].events & EPOLLIN) {
-	  MLeecher.recvHandshake(sock);
-	  MLeecher.sendHandshake(sock);
+
+	  if (!MLeecher.handshaked[sock]) { // if is some un-handshaked seeder
+	    MLeecher.recvHandshake(sock);
+	    if (MLeecher.sendHandshake(sock)) {
+	      std::cerr << "handshake msg responsed!" << std::endl;
+	    }
+	    MLeecher.handshaked[sock] = true;
+	  }
+
+	  else { // handshaked seeder
+	    // other processing
+	    if (MLeecher.processSock(sock)) {
+	      if (!MLeecher.sendRequest(sock, 1, 1, 1)) { // send request
+		std::cerr << "Failed to send request!" << std::endl;
+		exit(1);
+	      } else {std::cerr << "request sent!" << std::endl; }
+	    }
+	  }
 	}
       }
     }// while
@@ -204,3 +235,7 @@ int main (int argc, char * argv[]){
   releaseInfo(bt_args.bt_info);
   return 0;
 }
+
+
+
+

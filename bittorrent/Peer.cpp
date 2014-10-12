@@ -8,6 +8,12 @@
 #include "bt_lib.h"
 #include <openssl/sha.h>
 
+// TODO:
+//   + in seeder, map a sock to a peer
+
+
+
+
 SeederManager::SeederManager(bt_args_t *btArg) {
   // set default values
   // n_sockets = 0;
@@ -95,6 +101,8 @@ int SeederManager::acceptLeecher() {
     exit(1);
   }
   
+  //mark leecherSock as not yet handshaked
+  this->handshaked[leecherSock] = false;
   // sockets[n_sockets++] = leecherSock; // add leecherSock into sockets
   // poll_sockets[n_sockets - 1].fd = leecherSock; // save descriptor
   // poll_sockets[n_sockets - 1].events = POLLIN; // set ..
@@ -125,11 +133,60 @@ bool SeederManager::recvHandshake(int leecherSock) {
     std::cerr << "Failed to handshake!" << std::endl;
     return false;
   }
-  buf[20] = '\0';
-  if (t > 0)
+  buf[20] 
+= '\0';
+  if (t > 0) {
+    // now mark leecherSock as handshaked
+    this->handshaked[leecherSock] = true;
     printMSG("Recv handshake msg from with %d... OK! received: %s...\n", leecherSock, buf);
+  }
   return true;
 }
+
+
+// TODO
+bool SeederManager::sendBitfield(int sock) {
+  char buf[MAX_BUF_SZIE];
+  int len;
+  if (! createBitfield(buf, len) ) {
+    return false;
+  }
+  if (! sendData(sock, buf, len)) {
+    std::cerr << "Failed to send bitfield!" << std::endl;
+    exit(1);
+  }
+  return true;
+}
+
+bool SeederManager::createBitfield(char *buf, int &len) {
+  bt_msg_t *msg = (bt_msg_t *) buf;
+  bzero(buf, MAX_BUF_SZIE);
+  len = sizeof(bt_msg_t);
+  msg->length = len - sizeof(int);
+  msg->bt_type = (unsigned char) 5;
+  msg->payload.bitfield.size = this->args->bt_info->num_pieces;
+  // fill the bitfield somehow
+  // TODO
+  return true;
+}
+
+
+
+
+bool SeederManager::processSock(int sock) {
+  char buf[MAX_BUF_SZIE];
+  if (!readMSG(sock, buf)) {
+    std::cerr << "Failed to read msg from leecher!" << std::endl;
+    exit(1);
+  }
+  bt_msg_t *msg = (bt_msg_t *) buf;
+  
+  return true;
+}
+
+
+
+
 
 
 
@@ -212,6 +269,44 @@ bool LeecherManager::sendHandshake(int sockfd) {
 }
 
 
+bool LeecherManager::createRequest(char *buf, int &len, int index, int begin, int length) {
+  bt_request_t request;
+  request.index = index;
+  request.begin = begin;
+  request.length = length;
+  bt_msg_t *msg = (bt_msg_t *) buf;
+  msg->bt_type = (unsigned char) 6;
+  msg->payload.request = request;
+  msg->length = sizeof(bt_msg_t) - sizeof(int);
+  len = sizeof(bt_request_t);
+  return true;
+}
+
+
+bool LeecherManager::sendRequest(int sock, int index, int begin, int length) {
+  char buf[MAX_BUF_SZIE];
+  int len;
+  createRequest(buf, len, index, begin, length);
+  if (!sendData(sock, buf, len)) {
+    std::cerr << "Failed to send request data to seeder XXX!" << std::endl;
+    exit(1);
+  }
+  return true;
+}
+
+
+bool LeecherManager::processSock(int sock) {
+  char buf[MAX_BUF_SZIE];
+  if (!readMSG(sock, buf)) {
+    std::cerr << "Failed to read msg from leecher!" << std::endl;
+    exit(1);
+  }
+  bt_msg_t *msg = (bt_msg_t *) buf;
+  
+  return true;
+}
+
+
 bool sendData(int seederSock, char *buf, int n_bytes) {
   int status = write(seederSock, buf, n_bytes);
   if (status < 0) {
@@ -248,6 +343,9 @@ bool createHandshakeMsg(char *buf, bt_info_t *info,  char *id) {
 
 
 
+bool readMSG(int sock, char *buf) {
+  return (read(sock, buf, MAX_BUF_SZIE) > 0);
+}
 
 
 
