@@ -181,9 +181,11 @@ int main (int argc, char * argv[]){
 
     // the event loop
     while (true) {
-      int n = epoll_wait(efd, events, MAX_CONNECTIONS, -1);
-      //std::cerr << "n = " << n << std::endl;
-
+      int n = epoll_wait(efd, events, MAX_CONNECTIONS, 2000);
+      if (MLeecher.isDownloadComplete()) {
+	std::cerr << "File downloaded, now leecher is stoping ..." << std::endl;
+	break;
+      }
       // handle all events
       for (int i = 0; i < n; ++i) {
 	if ((events[i].events | EPOLLIN) <= 0) continue;
@@ -210,29 +212,6 @@ int main (int argc, char * argv[]){
 
 
 
-  //main client loop, not required in the milestone
-  // printMSG("Starting Main Loop\n");
-  while(false){
-
-    //try to accept incoming connection from new peer
-    
-    
-    //poll current peers for incoming traffic
-    //   write pieces to files
-    //   udpdate peers choke or unchoke status
-    //   responses to have/havenots/interested etc.
-    
-    //for peers that are not choked
-    //   request pieaces from outcoming traffic
-
-    //check livelenss of peers and replace dead (or useless) peers
-    //with new potentially useful peers
-    
-    //update peers, 
-
-  }
-
-  // release mememery of torrent
   releaseInfo(bt_args.bt_info);
   return 0;
 }

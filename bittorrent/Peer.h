@@ -59,6 +59,7 @@ public:
   int sockets[MAX_CONNECTIONS]; //Array of possible sockets
   bool sendRequest(int sock);
   bool processSock(int sock); // process a sok
+  bool isDownloadComplete();
   std::map <int, bool> handshaked;
 private:
   bt_args_t *args;

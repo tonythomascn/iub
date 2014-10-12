@@ -251,6 +251,7 @@ LeecherManager::LeecherManager(bt_args_t *btArg) {
   args = btArg;
   // set downloaded all 0
   memset(downloaded, 0, MAX_PIECES_NUM);
+  n_downloaded = 0;
 }
 
 bool LeecherManager::connectSeeders() {
@@ -318,9 +319,15 @@ bool LeecherManager::sendHandshake(int sockfd) {
 bool LeecherManager::createRequest(char *buf, int &len, int index, int begin, int length) {
   bt_msg_t *msg = (bt_msg_t *) buf;
   bt_request_t request;
+  int file_size = args->bt_info->length;
+  int offset = index * args->bt_info->piece_length + begin;
+  if (length > file_size - offset) {
+    length = file_size - offset;
+  }
   request.index = index;
   request.begin = begin;
   request.length = length;
+
   msg->payload.request = request;
   // add other field
   msg->bt_type = (unsigned char) 6;
@@ -363,6 +370,11 @@ bool LeecherManager::sendRequest(int sock) {
 
 }
 
+bool LeecherManager::isDownloadComplete() {
+  return (n_downloaded == args->bt_info->num_pieces);
+}
+
+
 bool LeecherManager::processSock(int sock) {
   char buf[MAX_BUF_SZIE];
   int len;
@@ -385,6 +397,7 @@ bool LeecherManager::processSock(int sock) {
     bt_piece_t piece = msg->payload.piece; // assign the piece
     // write to file based on the info in piece
     this->downloaded[piece.index] = 2; // set this piece as download
+    n_downloaded++; // ++ # of downloaded pieces
     printMSG("Piece downloaded from XXX!\n");
     // TODO: save this piece to file
     // TODO: send have msg
