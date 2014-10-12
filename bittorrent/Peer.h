@@ -66,6 +66,7 @@ private:
   bool sendRequest(int sock, int index, int begin, int length); // send request msg to sock
   bool createRequest(char *buf, int &len, int index, int begin, int length); // create request msg
   int downloaded[MAX_PIECES_NUM]; // 0 - not download, 1 - in process, 2 - downloaded
+  int n_downloaded; // record how many piece has been downloaded
 }; 
 
 
@@ -85,6 +86,8 @@ bool createHandshakeMsg(char *buf, bt_info_t *info, char *id);
 // pick a free piece index, return -1 if no free index
 int pickNeedPiece(int *indexes, int len);
 
+// create type-7 msg based on request, save in buf, set len, read data from fp.
+bool createPieceMsg(FILE *fp, char *buf, int &len, int offset,  bt_request_t);
 
 
 #endif

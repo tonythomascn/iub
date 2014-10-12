@@ -131,8 +131,12 @@ void parse_args(bt_args_t * bt_args, int argc,  char * argv[]){
 
   //null bt_info pointer, should be set once torrent file is read
   bt_args->bt_info = NULL;
+  
+  //default save_file
+  //  strcpy(bt_args->save_file, ("downloaded_" + std::string(bt_args->bt_info->name)).c_str());
 
-  //default lag file
+
+  //default log file
   strncpy(bt_args->log_file,"bt-client.log",FILE_NAME_MAX);
   
   for(i=0;i<MAX_CONNECTIONS;i++){

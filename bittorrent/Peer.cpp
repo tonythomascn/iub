@@ -10,6 +10,7 @@
 #include <sstream>
 // TODO:
 //   + in seeder, map a sock to a peer
+//   + add desctructor for all classed, very important
 
 
 
@@ -86,6 +87,13 @@ SeederManager::SeederManager(bt_args_t *btArg) {
 
   //copy the parsed bt_args
   args = btArg;
+  //open the resource file as "rb"
+  //note, for a seeder, resource file is read-only
+  args->f_save = fopen(args->bt_info->name, "rb");
+  if (args->f_save != NULL) {
+    std::cerr << "Opening resource file " 
+	      << args->bt_info->name << " ... OK!" << std::endl;
+  }
 }
 
 
@@ -133,8 +141,7 @@ bool SeederManager::recvHandshake(int leecherSock) {
     std::cerr << "Failed to handshake with XXX!" << std::endl;
     return false;
   }
-  buf[20] 
-= '\0';
+  buf[20] = '\0';
   if (t > 0) {
     // now mark leecherSock as handshaked
     this->handshaked[leecherSock] = true;
@@ -147,6 +154,9 @@ bool SeederManager::recvHandshake(int leecherSock) {
 
 
 // TODO
+// in our case, a seeder will always have the complete file
+// thus bitfield is actually useless
+// but we still implement it
 bool SeederManager::sendBitfield(int sock) {
   char buf[MAX_BUF_SZIE];
   int len;
@@ -159,7 +169,7 @@ bool SeederManager::sendBitfield(int sock) {
     std::cerr << "Failed to send bitfield to XXX!" << std::endl;
     exit(1);
   }
-  std::cerr << "Sending bitfield from XXX ... OK!" << std::endl;
+  std::cerr << "Sending bitfield to XXX ... OK!" << std::endl;
   return true;
 }
 
@@ -178,6 +188,8 @@ bool SeederManager::createBitfield(char *buf, int &len) {
 
 
 
+
+
 bool SeederManager::processSock(int sock) {
   char buf[MAX_BUF_SZIE];
   int len;
@@ -187,7 +199,32 @@ bool SeederManager::processSock(int sock) {
   }
   bt_msg_t *msg = (bt_msg_t *) buf;
   
-  std::cerr << "Processing msg with msg_type [" << (int) (msg->bt_type) <<  "] from XXX ... OK!" << std::endl;
+  // process different types of msg
+  std::cerr << "Processing msg with msg_type [" << (int) (msg->bt_type) 
+	    <<  "] from XXX ... " << std::endl;
+  switch (msg->bt_type) {
+  case 6: // msg:request
+    // TODO: send piece
+    bt_request_t request = msg->payload.request;
+    char buf[MAX_BUF_SZIE];
+    int len;
+    // calculate the offset
+    int offset = request.index * args->bt_info->piece_length + request.begin;
+    createPieceMsg(this->args->f_save, buf, len, offset, request); 
+    if (sendData(sock, buf, len)) {
+      std::cerr << "Sending piece [" << len << " bytes] to leecher XXX ... OK!" << std::endl;
+    }
+    break;
+
+  // case 4: msg:have
+  //     //as a seeder always a seeder, do nothing here
+  //   break;
+
+  
+  }
+
+  std::cerr << "Processing msg with msg_type [" << (int) (msg->bt_type) 
+	    <<  "] from XXX ... OK!\n" << std::endl;
   return true;
 }
 
@@ -279,15 +316,18 @@ bool LeecherManager::sendHandshake(int sockfd) {
 
 
 bool LeecherManager::createRequest(char *buf, int &len, int index, int begin, int length) {
+  bt_msg_t *msg = (bt_msg_t *) buf;
   bt_request_t request;
   request.index = index;
   request.begin = begin;
   request.length = length;
-  bt_msg_t *msg = (bt_msg_t *) buf;
-  msg->bt_type = (unsigned char) 6;
   msg->payload.request = request;
+  // add other field
+  msg->bt_type = (unsigned char) 6;
+
   msg->length = sizeof(bt_msg_t) - sizeof(int);
-  len = sizeof(bt_request_t);
+  printMSG("Creating request (index %d, begin %d, length %d)\n", index, begin, length);
+  len = sizeof(bt_msg_t);
   return true;
 }
 
@@ -310,7 +350,7 @@ bool LeecherManager::sendRequest(int sock) {
   if (index < 0) {
     // download complete
     // take some action
-    exit(1);
+    return false; // no request sent, all pieces are either completed or in progress
   }
   else { // some valid indx
     this->downloaded[index] = 1; // set as in progress
@@ -327,7 +367,7 @@ bool LeecherManager::processSock(int sock) {
   char buf[MAX_BUF_SZIE];
   int len;
   if (readMSG(sock, buf, len) < 0) {
-    std::cerr << "Failed to read msg from leecher XXX!" << std::endl;
+    std::cerr << "Failed to read msg from seeder XXX!" << std::endl;
     exit(1);
   }
   bt_msg_t *msg = (bt_msg_t *) buf;
@@ -336,29 +376,40 @@ bool LeecherManager::processSock(int sock) {
     
   case 5: // recv  a bitfield
     // need to send a request
+    puts("bitfield recv!\n");
     this->sendRequest(sock);
     break; 
 
-  // case 7: // recieve a piece
-  //   bt_piece_t piece = msg->payload.piece; // assign the piece
-  //   // write to file based on the info in piece
-  //   this->downloaded[piece.index] = 2; // set this piece as download
-  //   // TODO: send have msg
-  //   // TODO: send another request
-  //   this->sendRequest();
-  //   break;
+
+  case 7: // recieve a piece
+    bt_piece_t piece = msg->payload.piece; // assign the piece
+    // write to file based on the info in piece
+    this->downloaded[piece.index] = 2; // set this piece as download
+    printMSG("Piece downloaded from XXX!\n");
+    // TODO: save this piece to file
+    // TODO: send have msg
+    // TODO: send another request
+    this->sendRequest(sock);
+    break;
   } // switch
-  std::cerr << "Msg with msg_type [" << (int) (msg->bt_type) <<  "] from XXX ... processed!" << std::endl;
+  std::cerr << "Msg with msg_type [" << (int) (msg->bt_type) <<  "] from XXX ... processed!\n" << std::endl;
   return true;
 }
 
 
 bool sendData(int seederSock, char *buf, int n_bytes) {
-  int status = write(seederSock, buf, n_bytes);
-  if (status < 0) {
+  int sent_size = write(seederSock, buf, n_bytes);
+  char *tmp = buf;
+  while (sent_size > 0 && n_bytes > sent_size) { // not yet finish the sending
+    tmp += sent_size;
+    n_bytes -= sent_size; // remaining size
+    sent_size = write(seederSock, tmp, n_bytes);
+  }
+  if (sent_size < 0) {
     std::cerr << "Failed to send data." << std::endl;
     return false;
   }
+  
   return true;
 }
 
@@ -390,9 +441,27 @@ bool createHandshakeMsg(char *buf, bt_info_t *info,  char *id) {
 
 
 int readMSG(int sock, char *buf, int &len) {
-  int readsize = read(sock, buf, MAX_BUF_SZIE);
-  if (readsize <= 0) return -1; // failed
+  char *tmp = buf;
+  len = 0;
+  int t;
+  while (true) {
+    t = read(sock, tmp, 100);
+    if (t <= 0) { // no further data available
+      break;
+    }
+    else {
+      len += t;
+      tmp += t;
+    }
+  }
+
   bt_msg_t *msg = (bt_msg_t *) buf;
+  int need_to_read = msg->length + sizeof(int);
+  if (len != need_to_read) {
+    std::cerr << len << " bytes read,  " << need_to_read << " bytes needed!" << std::endl;
+    exit(1);
+  }
+  std::cerr << len << " bytes read,  " << need_to_read << " bytes needed!" << std::endl;
   return (int) msg->bt_type;
 }
 
@@ -403,6 +472,39 @@ int pickNeedPiece(int *indexes, int len) {
     if (indexes[i] == 0) return i;
   return -1;
 }
+
+
+
+bool createPieceMsg(FILE *fp, char *buf, int &len, int offset,  bt_request_t request) {
+  if (fp == NULL) {
+    std::cerr << "File can not open when create the piece msg!" << std::endl;
+    exit(1);
+  }
+  // do not directly operate on fp, 
+  // fp should not be modified
+  FILE *tmp = fp;
+
+  // construct msg
+  bt_msg_t *msg =  (bt_msg_t *) buf;
+  msg->length = sizeof(bt_msg_t) + request.length - sizeof(int);
+  msg->bt_type = (unsigned char) 7;
+  bt_piece_t *piece = &(msg->payload.piece); // point to payload
+  piece->index = request.index;
+  piece->begin = request.begin;
+  
+  
+
+  printMSG("Reading - offset [%d] - length [%d] \n", offset, request.length);
+  fseek(tmp, offset, SEEK_SET);
+  len = fread(piece->piece, 1, request.length, tmp);
+  if (len != request.length) {
+    std::cerr << "Reading error!" << std::endl;
+    exit(1);
+  }
+  len = msg->length + sizeof(int);
+  return true;
+}
+
 
 // std::string getPeerDesc(char *ip, unsigned short port) {
 //   char id[ID_SIZE];

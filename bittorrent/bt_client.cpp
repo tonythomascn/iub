@@ -107,7 +107,7 @@ int main (int argc, char * argv[]){
     // the event loop
     while (true) {
       int n = epoll_wait(efd, events, MAX_CONNECTIONS, -1);
-      std::cerr << "n = " << n << std::endl;
+      //      std::cerr << "n = " << n << std::endl;
 
       // handle all events
       for (int i = 0; i < n; ++i) { 
@@ -182,10 +182,11 @@ int main (int argc, char * argv[]){
     // the event loop
     while (true) {
       int n = epoll_wait(efd, events, MAX_CONNECTIONS, -1);
-      std::cerr << "n = " << n << std::endl;
+      //std::cerr << "n = " << n << std::endl;
 
       // handle all events
       for (int i = 0; i < n; ++i) {
+	if ((events[i].events | EPOLLIN) <= 0) continue;
 	int sock = events[i].data.fd;
 
 	if (!MLeecher.handshaked[sock]) { // if is some un-handshaked seeder
