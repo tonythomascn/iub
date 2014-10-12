@@ -410,7 +410,7 @@ bool LeecherManager::processSock(int sock) {
     n_downloaded++; // ++ # of downloaded pieces
     int offset = piece.index * args->bt_info->piece_length + piece.begin;
     int piece_length = len - sizeof(bt_msg_t); // calc the size of the piece
-    if (saveToFile(args->f_save, piece.piece, offset, piece_length) > 0) { // save to file
+    if (saveToFile(args->f_save, buf + sizeof(bt_msg_t), offset, piece_length) > 0) { // save to file
       printMSG("Piece %d downloaded from XXX, offset [%d], length [%d]!\n", 
 	       piece.index, offset, piece_length);
     } else {
@@ -532,12 +532,12 @@ bool createPieceMsg(FILE *fp, char *buf, int &len, int offset,  bt_request_t req
 
   printMSG("Reading - offset [%d] - length [%d] \n", offset, request.length);
   fseek(tmp, offset, SEEK_SET);
-  len = fread(piece->piece, 1, request.length, tmp);
+  len = fread(buf + sizeof(bt_msg_t), 1, request.length, tmp);
   if (len != request.length) {
     std::cerr << "Reading error!" << std::endl;
     exit(1);
   }
-  len = msg->length + sizeof(int);
+  len = request.length + sizeof(bt_msg_t);
   return true;
 }
 
