@@ -252,6 +252,16 @@ LeecherManager::LeecherManager(bt_args_t *btArg) {
   // set downloaded all 0
   memset(downloaded, 0, MAX_PIECES_NUM);
   n_downloaded = 0;
+
+  // open a save_file to save our data
+  if ( (args->f_save = fopen(args->save_file, "wb")) == NULL) {
+    perror("Can not create save_file!\n");
+    exit(1);
+  };
+  FILE *tmp = args->f_save;
+  // reserve the file size as large as the total download size
+  // use tmp, do not modify f_save directly
+  fseek(tmp, args->bt_info->length, SEEK_SET);
 }
 
 bool LeecherManager::connectSeeders() {
@@ -398,7 +408,15 @@ bool LeecherManager::processSock(int sock) {
     // write to file based on the info in piece
     this->downloaded[piece.index] = 2; // set this piece as download
     n_downloaded++; // ++ # of downloaded pieces
-    printMSG("Piece downloaded from XXX!\n");
+    int offset = piece.index * args->bt_info->piece_length + piece.begin;
+    int piece_length = len - sizeof(bt_msg_t); // calc the size of the piece
+    if (saveToFile(args->f_save, piece.piece, offset, piece_length) > 0) { // save to file
+      printMSG("Piece %d downloaded from XXX, offset [%d], length [%d]!\n", 
+	       piece.index, offset, piece_length);
+    } else {
+      printMSG("Failed to save piece %d:  offset [%d], length [%d]!\n", 
+	       piece.index, offset, piece_length);
+      }
     // TODO: save this piece to file
     // TODO: send have msg
     // TODO: send another request
@@ -407,6 +425,11 @@ bool LeecherManager::processSock(int sock) {
   } // switch
   std::cerr << "Msg with msg_type [" << (int) (msg->bt_type) <<  "] from XXX ... processed!\n" << std::endl;
   return true;
+}
+
+
+LeecherManager::~LeecherManager() {
+  fclose(args->f_save);
 }
 
 
@@ -516,6 +539,23 @@ bool createPieceMsg(FILE *fp, char *buf, int &len, int offset,  bt_request_t req
   }
   len = msg->length + sizeof(int);
   return true;
+}
+
+
+
+
+int saveToFile(FILE *fp, char *src, int offset, int length) {
+  if (fp == NULL) {
+    perror("Invalid file!");
+    exit(1);
+  }
+  FILE *tmp = fp;
+  fseek(tmp, offset, SEEK_SET);
+  int t = fwrite(src, 1, length, tmp);
+  if (t != length) {
+    return -1;
+  }
+  return length;
 }
 
 

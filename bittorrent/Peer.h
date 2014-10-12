@@ -61,6 +61,7 @@ public:
   bool processSock(int sock); // process a sok
   bool isDownloadComplete();
   std::map <int, bool> handshaked;
+  ~LeecherManager();
 private:
   bt_args_t *args;
   bool connectSeeder(struct sockaddr_in);
@@ -68,6 +69,7 @@ private:
   bool createRequest(char *buf, int &len, int index, int begin, int length); // create request msg
   int downloaded[MAX_PIECES_NUM]; // 0 - not download, 1 - in process, 2 - downloaded
   int n_downloaded; // record how many piece has been downloaded
+  
 }; 
 
 
@@ -90,8 +92,16 @@ int pickNeedPiece(int *indexes, int len);
 // create type-7 msg based on request, save in buf, set len, read data from fp.
 bool createPieceMsg(FILE *fp, char *buf, int &len, int offset,  bt_request_t);
 
+// save 'length' bytes from src to fp, return the actuall # of saved bytes
+// if failed, return -1
+int saveToFile(FILE *fp, char *src, int offset, int length);
 
 #endif
+
+
+
+
+
 
 
 
