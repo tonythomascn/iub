@@ -23,11 +23,19 @@
 
 bool VERBOSE = false;
 
+
+void tests() { // run  tests
+}
+
+
 #include "bt_lib.h"
 #include "bt_setup.h"
 #include "CLog.h"
 int main (int argc, char * argv[]){
   bt_args_t bt_args;
+  
+  // run test
+  tests();
 
 
   parse_args(&bt_args, argc, argv);
@@ -100,7 +108,9 @@ int main (int argc, char * argv[]){
     while (true) {
       int n = epoll_wait(efd, events, MAX_CONNECTIONS, -1);
       std::cerr << "n = " << n << std::endl;
-      for (int i = 0; i < n; ++i) {
+
+      // handle all events
+      for (int i = 0; i < n; ++i) { 
 	// TODO: if err happened 
 	if (sfd == events[i].data.fd) { // if == sfd
 	  int sock = MSeeder.acceptLeecher();
@@ -121,23 +131,18 @@ int main (int argc, char * argv[]){
 	}// if (sfd = ..
 	else { // if != sfd
 	  int sock = events[i].data.fd;
-	  if (events[i].events & EPOLLIN) {
-	    if (!MSeeder.handshaked[sock]) {
-	      MSeeder.recvHandshake(sock); // recieve handshake msg from leecher
-	      MSeeder.handshaked[sock] = true; // marked as handshaked
-	      MSeeder.sendBitfield(sock); // send its bitfield to sock
-	    }
-	    else { // work with handshake leecher
-	      if (!MSeeder.processSock(sock)) {
-		std::cerr << "Failed to process the leecher!" << std::endl;
-		exit(1);
-	      } 
-	      else { 
-		std::cerr << "request processed!" << std::endl;
-	      }
-	    } // else
+	  if (!MSeeder.handshaked[sock]) {
+	    MSeeder.recvHandshake(sock); // recieve handshake msg from leecher
+	    MSeeder.handshaked[sock] = true; // marked as handshaked
+	    MSeeder.sendBitfield(sock); // send its bitfield to sock
 	  }
-	}
+
+	  // work with handshake leecher
+	  else if (!MSeeder.processSock(sock)) {
+	    std::cerr << "Failed to process the leecher!" << std::endl;
+	    exit(1);
+	  } // else if
+	} // else
       }//  for
     } // while
   }
@@ -178,31 +183,28 @@ int main (int argc, char * argv[]){
     while (true) {
       int n = epoll_wait(efd, events, MAX_CONNECTIONS, -1);
       std::cerr << "n = " << n << std::endl;
+
+      // handle all events
       for (int i = 0; i < n; ++i) {
 	int sock = events[i].data.fd;
-	if (events[i].events & EPOLLIN) {
 
-	  if (!MLeecher.handshaked[sock]) { // if is some un-handshaked seeder
-	    MLeecher.recvHandshake(sock);
-	    if (MLeecher.sendHandshake(sock)) {
-	      std::cerr << "handshake msg responsed!" << std::endl;
-	    }
-	    MLeecher.handshaked[sock] = true;
+	if (!MLeecher.handshaked[sock]) { // if is some un-handshaked seeder
+	  MLeecher.recvHandshake(sock);
+	  if (MLeecher.sendHandshake(sock)) {
+	    std::cerr << "handshake msg responsed!" << std::endl;
 	  }
+	  MLeecher.handshaked[sock] = true;
+	} // if
 
-	  else { // handshaked seeder
-	    // other processing
-	    if (MLeecher.processSock(sock)) {
-	      if (!MLeecher.sendRequest(sock, 1, 1, 1)) { // send request
-		std::cerr << "Failed to send request!" << std::endl;
-		exit(1);
-	      } else {std::cerr << "request sent!" << std::endl; }
-	    }
-	  }
-	}
-      }
+	// process handshaked seeder
+	else if (!MLeecher.processSock(sock)) {
+	    std::cerr << "Failed to process the seeder XXX!" << std::endl;
+	    exit(1);
+	} // else if	
+
+      } // for
     }// while
-  }
+  } // else
   
   
   

@@ -3,7 +3,16 @@
 #include <netinet/in.h>
 #include "bt_lib.h"
 #include <map>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <string>
+#include <iostream>
+// global variables
 
+//std::map <int, std::string> sock2peer; // map a sock to a description of a peer
+//std::string getPeerDesc(char *ip, unsigned short port); // return a description of a peer
+//std::string getPeerDesc(struct sockaddr_in); // return a description of a peer
 
 // // class for a seeder
 class Seeder {
@@ -30,13 +39,13 @@ public:
   bool sendBitfield(int sock); // send msg of bitfield to sock
   std::map <int, bool> handshaked; // to mark if a sock has handshaked or not
 private:
-  bt_args_t *args;
+  bt_args_t *args; 
   bool createBitfield(char *buf, int &len); // create a msg for bitfield 
 };
 
 
 
-// manager of a leecher
+    // manager of a leecher
 class LeecherManager {
 public:
   // use bt_args to initialize the class

@@ -7,7 +7,7 @@
 #include <iostream>
 #include "bt_lib.h"
 #include <openssl/sha.h>
-
+#include <sstream>
 // TODO:
 //   + in seeder, map a sock to a peer
 
@@ -346,6 +346,28 @@ bool createHandshakeMsg(char *buf, bt_info_t *info,  char *id) {
 bool readMSG(int sock, char *buf) {
   return (read(sock, buf, MAX_BUF_SZIE) > 0);
 }
+
+
+// std::string getPeerDesc(char *ip, unsigned short port) {
+//   char id[ID_SIZE];
+//   char buf[ID_SIZE * 5];
+//   bzero(buf, ID_SIZE  * 5);
+  
+//   calc_id(ip, port, id);
+//   for (int i = 0; i < ID_SIZE; ++i) {
+//     sprintf(buf + i, "%02x", id[i]);
+//   }
+//   std::stringstream ss;
+//   ss << ip << ":" << port << "   ID:" << buf;
+//   return ss.str();
+// }
+
+
+
+
+
+
+
 
 
 
