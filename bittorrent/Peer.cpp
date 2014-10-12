@@ -196,7 +196,7 @@ bool LeecherManager::recvHandshake(int sockfd) {
   std::cerr << "t = " << t << std::endl;
   buf[20] = '\0';
   if (t > 0)
-    printMSG("Recv handshake msg from seeder ... OK!\n");
+    std::cerr << "Recv handshake msg from seeder ... OK!\n" << std::endl;
   return true;
 }
 

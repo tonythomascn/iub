@@ -133,10 +133,44 @@ int main (int argc, char * argv[]){
   else {  // run as leecher
     LeecherManager MLeecher (&bt_args);
     MLeecher.connectSeeders();
-    for (int i = 0; i < MLeecher.n_sockets; ++i) {
-      MLeecher.recvHandshake(MLeecher.sockets[i]);
-      MLeecher.sendHandshake(MLeecher.sockets[i]);
+    struct epoll_event event;
+    struct epoll_event events[MAX_CONNECTIONS + 5];
+
+    // create epoll
+    int efd = epoll_create1(0);   
+    if (efd == -1) {
+      std::cerr << "Failed to create epoll!" << std::endl;
+      exit(1);
     }
+
+    // add all sockfd into efd
+    for (int i = 0; i < MLeecher.n_sockets; ++i) {
+      int sock = MLeecher.sockets[i];
+      event.data.fd = sock;
+      event.events = EPOLLIN | EPOLLET;
+      if (make_socket_non_blocking(sock) < 0) {
+	std::cerr << "Failed to make sock non-block!" << std::endl;
+	exit(1);
+      }
+
+      if (epoll_ctl(efd, EPOLL_CTL_ADD, sock, &event) < 0) {
+	std::cerr << "Failed to add sfd to efd!" << std::endl;
+	exit(1);
+      }
+    }
+
+    // the event loop
+    while (true) {
+      int n = epoll_wait(efd, events, MAX_CONNECTIONS, -1);
+      std::cerr << "n = " << n << std::endl;
+      for (int i = 0; i < n; ++i) {
+	int sock = events[i].data.fd;
+	if (events[i].events & EPOLLIN) {
+	  MLeecher.recvHandshake(sock);
+	  MLeecher.sendHandshake(sock);
+	}
+      }
+    }// while
   }
   
   
