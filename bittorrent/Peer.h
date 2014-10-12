@@ -46,6 +46,7 @@ private:
 
 
     // manager of a leecher
+
 class LeecherManager {
 public:
   // use bt_args to initialize the class
@@ -56,14 +57,15 @@ public:
   bool recvHandshake(int sockfd);
   int n_sockets; // # of sockets
   int sockets[MAX_CONNECTIONS]; //Array of possible sockets
-  bool sendRequest(int sock, int index, int begin, int length); // send request msg to sock
+  bool sendRequest(int sock);
   bool processSock(int sock); // process a sok
   std::map <int, bool> handshaked;
 private:
   bt_args_t *args;
   bool connectSeeder(struct sockaddr_in);
+  bool sendRequest(int sock, int index, int begin, int length); // send request msg to sock
   bool createRequest(char *buf, int &len, int index, int begin, int length); // create request msg
-
+  int downloaded[MAX_PIECES_NUM]; // 0 - not download, 1 - in process, 2 - downloaded
 }; 
 
 
@@ -72,15 +74,16 @@ private:
 //send data in buf to seederSock with length n_bytes
 bool sendData(int seederSock, char *buf, int n_bytes);  
 
-// read a msg from sock to buf, return true if success, false otherwise
+// read a msg from sock to buf, return type of msg, if failed, return -1
 // the size of buf should be no smaller than MAX_BUF_SZIE
-bool readMSG(int sock, char *buf);
+ int readMSG(int sock, char *buf, int &len);
 
 
 /* create handshake message */
 bool createHandshakeMsg(char *buf, bt_info_t *info, char *id);
 
-
+// pick a free piece index, return -1 if no free index
+int pickNeedPiece(int *indexes, int len);
 
 
 

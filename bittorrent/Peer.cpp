@@ -81,7 +81,7 @@ SeederManager::SeederManager(bt_args_t *btArg) {
 	close(sockid);
       exit(1);
     }
-    printMSG("Listening on the server socket ... OK!\n");
+    printMSG("Listening on seeder socket ... OK!\n");
   }
 
   //copy the parsed bt_args
@@ -117,7 +117,7 @@ bool SeederManager::sendHandshake(int leecherSock) {
   createHandshakeMsg(buf, args->bt_info, args->id);
   bool status = sendData(leecherSock, buf, HANDESHAKE_SIZE);
   if (status) {
-    printMSG("Sending handshake msg to leecher ... OK!\n");
+    printMSG("Sending handshake msg to leecher XXX ... OK!\n");
   }
   return status;
 }
@@ -130,7 +130,7 @@ bool SeederManager::recvHandshake(int leecherSock) {
   bzero(buf, MAX_BUF_SZIE);
   t = read(leecherSock, buf, MAX_BUF_SZIE);
   if (t < 0) {
-    std::cerr << "Failed to handshake!" << std::endl;
+    std::cerr << "Failed to handshake with XXX!" << std::endl;
     return false;
   }
   buf[20] 
@@ -138,7 +138,9 @@ bool SeederManager::recvHandshake(int leecherSock) {
   if (t > 0) {
     // now mark leecherSock as handshaked
     this->handshaked[leecherSock] = true;
-    printMSG("Recv handshake msg from with %d... OK! received: %s...\n", leecherSock, buf);
+    printMSG("Recv handshake msg from leecher XXX ... OK!\n");
+    // TODO: verify the handshake message, if failed, return false
+    printMSG("Verifying handshake msg from leecher XXX ... OK\n");
   }
   return true;
 }
@@ -149,12 +151,15 @@ bool SeederManager::sendBitfield(int sock) {
   char buf[MAX_BUF_SZIE];
   int len;
   if (! createBitfield(buf, len) ) {
+    std::cerr << "Failed to create bitfield!" << std::endl;
     return false;
   }
+  std::cerr << "Creating bitfield for XXX ... OK!" << std::endl;
   if (! sendData(sock, buf, len)) {
-    std::cerr << "Failed to send bitfield!" << std::endl;
+    std::cerr << "Failed to send bitfield to XXX!" << std::endl;
     exit(1);
   }
+  std::cerr << "Sending bitfield from XXX ... OK!" << std::endl;
   return true;
 }
 
@@ -175,12 +180,14 @@ bool SeederManager::createBitfield(char *buf, int &len) {
 
 bool SeederManager::processSock(int sock) {
   char buf[MAX_BUF_SZIE];
-  if (!readMSG(sock, buf)) {
-    std::cerr << "Failed to read msg from leecher!" << std::endl;
+  int len;
+  if (readMSG(sock, buf, len) < 0) {
+    std::cerr << "Failed to read msg from leecher XXX!" << std::endl;
     exit(1);
   }
   bt_msg_t *msg = (bt_msg_t *) buf;
   
+  std::cerr << "Processing msg with msg_type [" << (int) (msg->bt_type) <<  "] from XXX ... OK!" << std::endl;
   return true;
 }
 
@@ -205,6 +212,8 @@ LeecherManager::LeecherManager(bt_args_t *btArg) {
   // set # of sockets as 0
   n_sockets = 0;
   args = btArg;
+  // set downloaded all 0
+  memset(downloaded, 0, MAX_PIECES_NUM);
 }
 
 bool LeecherManager::connectSeeders() {
@@ -212,7 +221,7 @@ bool LeecherManager::connectSeeders() {
     if (args->peers[i] != NULL) {
       peer_t *peerP = args->peers[i];
       if (! connectSeeder(peerP->sockaddr)) {
-	std::cerr << "Failed to connecet to ..." << std::endl;
+	std::cerr << "Failed to connecet to XXX ..." << std::endl;
 	exit(1);
       }
     }
@@ -233,10 +242,10 @@ bool LeecherManager::connectSeeder(struct sockaddr_in seederAddr) {
   // connect to a seeder
   int status = connect(sockfd, (struct sockaddr *)&seederAddr, sizeof(seederAddr));
   if (status < 0) {
-    std::cerr << "Failed to connect to the seeder!" << std::endl;
+    std::cerr << "Failed to connect to the seeder XXX!" << std::endl;
     return false;
   }
-  printMSG("Connecting to the seeder %d... OK!\n", sockfd);
+  printMSG("Connecting to the seeder XXX... OK!\n");
   return true;
 }
 
@@ -253,7 +262,7 @@ bool LeecherManager::recvHandshake(int sockfd) {
   std::cerr << "t = " << t << std::endl;
   buf[20] = '\0';
   if (t > 0)
-    std::cerr << "Recv handshake msg from seeder ... OK!\n" << std::endl;
+    std::cerr << "Recv handshake msg from XXX ... OK!\n" << std::endl;
   return true;
 }
 
@@ -263,7 +272,7 @@ bool LeecherManager::sendHandshake(int sockfd) {
   createHandshakeMsg(buf, args->bt_info, args->id);
   bool status = sendData(sockfd, buf, HANDESHAKE_SIZE);
   if (status) {
-    printMSG("Sending handshake msg to seeder ... OK!\n");
+    printMSG("Response handshake msg from seeder XXX ... OK!\n");
   }
   return status;
 }
@@ -295,14 +304,51 @@ bool LeecherManager::sendRequest(int sock, int index, int begin, int length) {
 }
 
 
+
+bool LeecherManager::sendRequest(int sock) {
+  int index = pickNeedPiece(downloaded, this->args->bt_info->num_pieces);
+  if (index < 0) {
+    // download complete
+    // take some action
+    exit(1);
+  }
+  else { // some valid indx
+    this->downloaded[index] = 1; // set as in progress
+    if (this->sendRequest(sock, index, 0, this->args->bt_info->piece_length)) {
+      printMSG("Send request with (index %d, begin %d, length %d) to XXX ... OK!\n", 
+	       index, 0, this->args->bt_info->piece_length);
+      return true;
+    } else {return false;}
+  }
+
+}
+
 bool LeecherManager::processSock(int sock) {
   char buf[MAX_BUF_SZIE];
-  if (!readMSG(sock, buf)) {
-    std::cerr << "Failed to read msg from leecher!" << std::endl;
+  int len;
+  if (readMSG(sock, buf, len) < 0) {
+    std::cerr << "Failed to read msg from leecher XXX!" << std::endl;
     exit(1);
   }
   bt_msg_t *msg = (bt_msg_t *) buf;
-  
+  std::cerr << "Processing msg with msg_type [" << (int) (msg->bt_type) <<  "] from XXX ... " << std::endl;
+  switch (msg->bt_type) { // process diff types
+    
+  case 5: // recv  a bitfield
+    // need to send a request
+    this->sendRequest(sock);
+    break; 
+
+  // case 7: // recieve a piece
+  //   bt_piece_t piece = msg->payload.piece; // assign the piece
+  //   // write to file based on the info in piece
+  //   this->downloaded[piece.index] = 2; // set this piece as download
+  //   // TODO: send have msg
+  //   // TODO: send another request
+  //   this->sendRequest();
+  //   break;
+  } // switch
+  std::cerr << "Msg with msg_type [" << (int) (msg->bt_type) <<  "] from XXX ... processed!" << std::endl;
   return true;
 }
 
@@ -343,10 +389,20 @@ bool createHandshakeMsg(char *buf, bt_info_t *info,  char *id) {
 
 
 
-bool readMSG(int sock, char *buf) {
-  return (read(sock, buf, MAX_BUF_SZIE) > 0);
+int readMSG(int sock, char *buf, int &len) {
+  int readsize = read(sock, buf, MAX_BUF_SZIE);
+  if (readsize <= 0) return -1; // failed
+  bt_msg_t *msg = (bt_msg_t *) buf;
+  return (int) msg->bt_type;
 }
 
+
+
+int pickNeedPiece(int *indexes, int len) {
+  for (int i = 0; i < len; ++i) 
+    if (indexes[i] == 0) return i;
+  return -1;
+}
 
 // std::string getPeerDesc(char *ip, unsigned short port) {
 //   char id[ID_SIZE];

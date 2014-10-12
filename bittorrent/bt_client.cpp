@@ -190,9 +190,7 @@ int main (int argc, char * argv[]){
 
 	if (!MLeecher.handshaked[sock]) { // if is some un-handshaked seeder
 	  MLeecher.recvHandshake(sock);
-	  if (MLeecher.sendHandshake(sock)) {
-	    std::cerr << "handshake msg responsed!" << std::endl;
-	  }
+	  MLeecher.sendHandshake(sock);
 	  MLeecher.handshaked[sock] = true;
 	} // if
 
@@ -204,7 +202,7 @@ int main (int argc, char * argv[]){
 
       } // for
     }// while
-  } // else
+  } // else run as a leecher
   
   
   
