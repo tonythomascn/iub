@@ -230,6 +230,7 @@ void recusiveParse(char*& buf, HeadValue &hv, bt_info_t& info) {
 	  // now read piece_hashes
 	  for (int i = 0; i < info.num_pieces; ++i) {
 	    char *hashBuf = (char *) malloc(2 + ID_SIZE * sizeof(char));
+	    bzero(hashBuf, 2 + ID_SIZE);
 	    memcpy(hashBuf, i * ID_SIZE + hv.pValue, ID_SIZE);
 	    hashBuf[ID_SIZE] = '\0';
 	    //puts(hashBuf);
@@ -260,6 +261,7 @@ void recusiveParse(char*& buf, HeadValue &hv, bt_info_t& info) {
 
 bt_info_t parse_torrent_content_new(char * buf, int bufSize) {
   bt_info_t info;
+  memset(&info, 0, sizeof(info));
   HeadValue hv;
   info.length = 0;
   recusiveParse(buf, hv, info);
