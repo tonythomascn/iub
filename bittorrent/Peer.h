@@ -38,6 +38,7 @@ public:
   int sockid;
   bool sendBitfield(int sock); // send msg of bitfield to sock
   std::map <int, bool> handshaked; // to mark if a sock has handshaked or not
+  ~SeederManager();
 private:
   bt_args_t *args; 
   bool createBitfield(char *buf, int &len); // create a msg for bitfield 
@@ -78,7 +79,8 @@ private:
 //send data in buf to seederSock with length n_bytes
 bool sendData(int seederSock, char *buf, int n_bytes);  
 
-// read a msg from sock to buf, return type of msg, if failed, return -1
+// read a msg from sock to buf, return type of msg, if failed, return -1 
+// if nothing to read, return 0 (no error)
 // the size of buf should be no smaller than MAX_BUF_SZIE
  int readMSG(int sock, char *buf, int &len);
 
