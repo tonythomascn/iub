@@ -53,9 +53,6 @@ public:
   LeecherManager(bt_args_t *);
   // try to connect to a seeder
   bool connectSeeders();
-<<<<<<< HEAD
-  bool handshake();
-=======
   bool sendHandshake(int sockfd);
   bool recvHandshake(int sockfd);
   int n_sockets; // # of sockets
@@ -65,7 +62,6 @@ public:
   bool isDownloadComplete();
   std::map <int, bool> handshaked;
   ~LeecherManager();
->>>>>>> jiecchen
 private:
   bt_args_t *args;
   bool connectSeeder(struct sockaddr_in);

@@ -7,84 +7,9 @@
 #include <iostream>
 #include "bt_lib.h"
 #include <openssl/sha.h>
-<<<<<<< HEAD
 #include <fcntl.h>
-SeederManager::SeederManager(bt_args_t *btArg) {
-	// set temp peer to represent this seeder
-	peer_t thisPeer;
-	// assign 0 as its port to automatically assign a port later
-	init_peer(&thisPeer, btArg->id, btArg->ip, 0);
-	sockaddr_in seederAddr = thisPeer.sockaddr;
-	socklen_t socklen = sizeof(seederAddr);
-
-	// create a reliable stream socket using TCP
-	if ((sockid = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-		std::cerr << "Failed to open socket!\n";
-		throw "Failed to open socket!";
-	}
-	printMSG("Opening the socket ... OK!\n");
-
-	int flags; 
-	/* Set socket to non-blocking */
-	if ((flags = fcntl(sockid, F_GETFL, 0)) < 0) 
-	{ 
-		/* Handle error */ 
-		std::cerr << "Failed to set socket into nonblocking mode!\n";
-		if (-1 != sockid)
-			close(sockid);
-		throw "Failed to get socket flag!";
-	} 
-
-	if (fcntl(sockid, F_SETFL, flags | O_NONBLOCK) < 0) 
-	{ 
-		/* Handle error */ 
-		std::cerr << "Failed to set socket into nonblocking mode!\n";
-		if (-1 != sockid)
-			close(sockid);
-		throw "Failed to set socket into nonblocking mode!";
-
-	}
-
-	// bind the sock
-	int status = bind(sockid, (struct sockaddr *)&seederAddr, sizeof(struct sockaddr_in));
-	if (status < 0) {
-		std::cerr << "Failed to bind the port, check you input!\n";
-		if (-1 != sockid)
-			close(sockid);
-		throw "Failed to bind the port!";
-	}
-	else {
-		// obtain the port number
-		if (getsockname(sockid, (struct sockaddr *)&seederAddr, &socklen) < 0) {
-			std::cerr << "Failed to obtain ip:port for this client!\n";
-			if (-1 != sockid)
-				close(sockid);
-			throw "Failed to obtain port for this client!";
-		};
-		btArg->port = seederAddr.sin_port;
-		// recalc the id using new port number
-		calc_id(btArg->ip, btArg->port, btArg->id);
-		printMSG("Binding to the socket ... OK!\n");
-
-		//  do not modify the following, it must be printed out to the user
-		//  user then can use the ip:port to run a leecher
-		std::cout << "\n>>>> Binding to IP:Port: " << btArg->ip 
-			<< ":" << ntohs(seederAddr.sin_port) << "\n" << std::endl;
-
-		// set listen to up to  MAX_CONNECTIONS queued connection
-		if ( listen(sockid, MAX_CONNECTIONS) < 0 ) {
-			std::cerr << "Failed to listen on server socket.\n";
-			if (-1 != sockid)
-				close(sockid);
-			throw "Failed to listen on this socket!";
-		}
-		printMSG("Listening on the server socket ... OK!\n");
-	}
-
-	//copy the parsed bt_args
-	args = btArg;
-=======
 #include <sstream>
+#include <errno.h>
 // TODO:
 //   + in seeder, map a sock to a peer
 //   + add desctructor for all classed, very important
@@ -108,8 +33,8 @@ SeederManager::SeederManager(bt_args_t *btArg) {
 
   // create a reliable stream socket using TCP
   if ((sockid = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-    std::cerr << "Failed to open the socket!\n";
-    exit(1);
+      std::cerr << "Failed to open socket!\n";
+      throw "Failed to open socket!";
   }
   printMSG("Opening the socket ... OK!\n");
   // // add this sockid into sockets[0]
@@ -119,15 +44,34 @@ SeederManager::SeederManager(bt_args_t *btArg) {
   // poll_sockets[0].fd = sockid;
   // poll_sockets[0].events = POLLIN;
 
-
+    int flags;
+    /* Set socket to non-blocking */
+    if ((flags = fcntl(sockid, F_GETFL, 0)) < 0)
+    {
+        /* Handle error */
+        std::cerr << "Failed to set socket into nonblocking mode!\n";
+        if (-1 != sockid)
+            close(sockid);
+        throw "Failed to get socket flag!";
+    }
+    
+    if (fcntl(sockid, F_SETFL, flags | O_NONBLOCK) < 0)
+    {
+        /* Handle error */
+        std::cerr << "Failed to set socket into nonblocking mode!\n";
+        if (-1 != sockid)
+            close(sockid);
+        throw "Failed to set socket into nonblocking mode!";
+        
+    }
 
   // bind the sock
   int status = bind(sockid, (struct sockaddr *)&seederAddr, sizeof(struct sockaddr_in));
   if (status < 0) {
-    std::cerr << "Failed to bind the port, check you input!\n";
-    if (-1 != sockid)
-      close(sockid);
-    exit(1);
+      std::cerr << "Failed to bind the port, check you input!\n";
+      if (-1 != sockid)
+          close(sockid);
+      throw "Failed to bind the port!";
   }
   else {
     // make as non-block socket
@@ -154,10 +98,10 @@ SeederManager::SeederManager(bt_args_t *btArg) {
 
     // set listen to up to  MAX_CONNECTIONS queued connection
     if ( listen(sockid, MAX_CONNECTIONS) < 0 ) {
-      std::cerr << "Failed to listen on server socket.\n";
-      if (-1 != sockid)
-	close(sockid);
-      exit(1);
+        std::cerr << "Failed to listen on server socket.\n";
+        if (-1 != sockid)
+            close(sockid);
+        throw "Failed to listen on this socket!";
     }
     printMSG("Listening on seeder socket ... OK!\n");
   }
@@ -171,14 +115,12 @@ SeederManager::SeederManager(bt_args_t *btArg) {
     std::cerr << "Opening resource file " 
 	      << args->bt_info->name << " ... OK!" << std::endl;
   }
->>>>>>> jiecchen
 }
 
 
 
 // accept a new leecher
 int SeederManager::acceptLeecher() {
-<<<<<<< HEAD
 	struct sockaddr_in leecherAddr;
 	socklen_t addrLen = sizeof(leecherAddr);
 	printMSG("Waiting for a new connection ...\n");
@@ -189,6 +131,7 @@ int SeederManager::acceptLeecher() {
 	if (leecherSock < 0) {
         if (EAGAIN != errno){
             std::cerr << "Failed to accept a new leecher!\n";
+            throw "Failed to accept a new leecher!";
             break;
         }
 	}
@@ -196,25 +139,14 @@ int SeederManager::acceptLeecher() {
             break;
         sleep(1);
     }
+    
+    //mark leecherSock as not yet handshaked
+    this->handshaked[leecherSock] = false;
+    // sockets[n_sockets++] = leecherSock; // add leecherSock into sockets
+    // poll_sockets[n_sockets - 1].fd = leecherSock; // save descriptor
+    // poll_sockets[n_sockets - 1].events = POLLIN; // set ..
+    
 	return leecherSock;
-=======
-  struct sockaddr_in leecherAddr;
-  socklen_t addrLen = sizeof(leecherAddr);
-  printMSG("Waiting for a new connection ...\n");
-  int leecherSock = accept(sockid, (struct sockaddr *) &leecherAddr, &addrLen);
-  if (leecherSock < 0) {
-    std::cerr << "Failed to accept a new leecher!\n";
-    exit(1);
-  }
-  
-  //mark leecherSock as not yet handshaked
-  this->handshaked[leecherSock] = false;
-  // sockets[n_sockets++] = leecherSock; // add leecherSock into sockets
-  // poll_sockets[n_sockets - 1].fd = leecherSock; // save descriptor
-  // poll_sockets[n_sockets - 1].events = POLLIN; // set ..
- 
-
-  return leecherSock;
 }
 
 
@@ -248,7 +180,6 @@ bool SeederManager::recvHandshake(int leecherSock) {
     printMSG("Verifying handshake msg from leecher XXX ... OK\n");
   }
   return true;
->>>>>>> jiecchen
 }
 
 
@@ -364,13 +295,13 @@ LeecherManager::LeecherManager(bt_args_t *btArg) {
 }
 
 bool LeecherManager::connectSeeders() {
-<<<<<<< HEAD
 	for (int i = 0; i < MAX_CONNECTIONS; ++i) 
 		if (args->peers[i] != NULL) {
 			peer_t *peerP = args->peers[i];
 			try {
 				connectSeeder(peerP->sockaddr);
 			} catch (const char* msg) {
+                std::cerr << "Failed to connecet to XXX ..." << std::endl;
 				std::cerr << msg << std::endl;
 			}
 		}
@@ -380,47 +311,12 @@ bool LeecherManager::connectSeeders() {
 bool LeecherManager::connectSeeder(struct sockaddr_in seederAddr) {
 	bool breturn = false;
 	// create socket
-	if (sockfd == -1) {
-		sockfd = socket(AF_INET, SOCK_STREAM, 0);
+		int sockfd = socket(AF_INET, SOCK_STREAM, 0);
 		if (sockfd == -1) {
 			//std::cerr << "Failed to create socket" << std::endl;
 			throw "Failed to create socket!";
 		}
-	}
-=======
-  for (int i = 0; i < MAX_CONNECTIONS; ++i) 
-    if (args->peers[i] != NULL) {
-      peer_t *peerP = args->peers[i];
-      if (! connectSeeder(peerP->sockaddr)) {
-	std::cerr << "Failed to connecet to XXX ..." << std::endl;
-	exit(1);
-      }
-    }
-  return true;
-}
-
-bool LeecherManager::connectSeeder(struct sockaddr_in seederAddr) {
-  // create socket
-  int sockfd = socket(AF_INET, SOCK_STREAM, 0);
-  if (sockfd < 0) {
-      std::cerr << "Failed to create socket" << std::endl;
-      return false;
-  }
-  // add socket into the array of sockets
-  sockets[n_sockets++] = sockfd;
-
-  
-  // connect to a seeder
-  int status = connect(sockfd, (struct sockaddr *)&seederAddr, sizeof(seederAddr));
-  if (status < 0) {
-    std::cerr << "Failed to connect to the seeder XXX!" << std::endl;
-    return false;
-  }
-  printMSG("Connecting to the seeder XXX... OK!\n");
-  return true;
-}
->>>>>>> jiecchen
-
+    
 	int flags;
 	/* Set socket to non-blocking */
 	if ((flags = fcntl(sockfd, F_GETFL, 0)) < 0)
@@ -441,8 +337,9 @@ bool LeecherManager::connectSeeder(struct sockaddr_in seederAddr) {
 		throw "Failed to set socket into nonblocking mode!";
 
 	}
+    // add socket into the array of sockets
+    sockets[n_sockets++] = sockfd;
 
-<<<<<<< HEAD
 	// connect to a seeder
     int status = 0;
     
@@ -453,21 +350,21 @@ bool LeecherManager::connectSeeder(struct sockaddr_in seederAddr) {
         if (EINPROGRESS != errno){
             if (-1 != sockfd)
                 close(sockfd);
-		//std::cerr << "Failed to connect to the seeder!" << std::endl;
-		    throw "Failed to connect to seeder!";
+		//std::cerr << "Failed to connect to the seeder XXX!" << std::endl;
+		    throw "Failed to connect to the seeder XXX!";
             break;
         }
 	}
 	else{
 
-		printMSG("Connecting to the seeder ... OK!\n");
+		printMSG("Connecting to the seeder XXX... OK!\n");
 		breturn = true;
         break;
 	}
         sleep(1);
     }
 	return breturn;
-=======
+}
 bool LeecherManager::recvHandshake(int sockfd) {
   char buf[MAX_BUF_SZIE];
   int t;
@@ -482,7 +379,7 @@ bool LeecherManager::recvHandshake(int sockfd) {
   if (t > 0)
     std::cerr << "Recv handshake msg from XXX ... OK!\n" << std::endl;
   return true;
->>>>>>> jiecchen
+
 }
 
 bool LeecherManager::sendHandshake(int sockfd) {
