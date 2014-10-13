@@ -25,7 +25,7 @@ void usage(FILE * file){
           "  -h            \t Print this help screen\n"
           "  -b ip         \t Bind to this ip for incoming connections, ports\n"
           "                \t are selected automatically\n"
-          "  -s save_file  \t Save the torrent in directory save_dir (dflt: .)\n"
+          "  -s save_file  \t Save the torrent in to specific file (dflt: download)\n"
           "  -l log_file   \t Save logs to log_filw (dflt: bt-client.log)\n"
           "  -p ip:port    \t Instead of contacing the tracker for a peer list,\n"
           "                \t use this peer instead, ip:port (ip or hostname)\n"

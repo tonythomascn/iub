@@ -223,10 +223,16 @@ bool SeederManager::createBitfield(char *buf, int &len) {
 bool SeederManager::processSock(int sock) {
   char buf[MAX_BUF_SZIE];
   int len;
-  if (readMSG(sock, buf, len) < 0) {
+  int status = readMSG(sock, buf, len);
+  if (status < 0) { // error happened
     std::cerr << "Failed to read msg from leecher XXX!" << std::endl;
     exit(1);
   }
+  else if (status == 0) { // this sock is disconnected
+    close(sock);
+    return true;
+  }
+
   bt_msg_t *msg = (bt_msg_t *) buf;
   
   // process different types of msg
@@ -259,8 +265,13 @@ bool SeederManager::processSock(int sock) {
 }
 
 
-
-
+//TODO: 
+//  + release all memory
+//  + close all handles
+SeederManager::~SeederManager() {
+  releaseInfo(this->args->bt_info);
+  fclose(this->args->f_save);
+}
 
 
 
@@ -467,7 +478,8 @@ bool LeecherManager::processSock(int sock) {
   case 5: // recv  a bitfield
     // need to send a request
     puts("bitfield recv!\n");
-    this->sendRequest(sock);
+    if (!this->isDownloadComplete())
+      this->sendRequest(sock);
     break; 
 
 
@@ -488,7 +500,8 @@ bool LeecherManager::processSock(int sock) {
     // TODO: save this piece to file
     // TODO: send have msg
     // TODO: send another request
-    this->sendRequest(sock);
+    if (!this->isDownloadComplete())
+      this->sendRequest(sock);
     break;
   } // switch
   std::cerr << "Msg with msg_type [" << (int) (msg->bt_type) <<  "] from XXX ... processed!\n" << std::endl;
@@ -496,8 +509,12 @@ bool LeecherManager::processSock(int sock) {
 }
 
 
+
 LeecherManager::~LeecherManager() {
-  fclose(args->f_save);
+  fclose(args->f_save); // close f_save handle
+  for (int i = 0; i < this->n_sockets; ++i) { // close all connect sockets
+    close(this->sockets[i]); 
+  }
 }
 
 
@@ -548,6 +565,7 @@ int readMSG(int sock, char *buf, int &len) {
   char *tmp = buf;
   len = 0;
   int t;
+  bzero(buf, MAX_BUF_SZIE);
   while (true) {
     t = read(sock, tmp, 100);
     if (t <= 0) { // no further data available
@@ -561,11 +579,12 @@ int readMSG(int sock, char *buf, int &len) {
 
   bt_msg_t *msg = (bt_msg_t *) buf;
   int need_to_read = msg->length + sizeof(int);
-  if (len != need_to_read) {
+  if (msg->length == 0) need_to_read = 0;
+  if (len != need_to_read && msg->length != 0) {
     std::cerr << len << " bytes read,  " << need_to_read << " bytes needed!" << std::endl;
     exit(1);
   }
-  std::cerr << len << " bytes read,  " << need_to_read << " bytes needed!" << std::endl;
+  //  std::cerr << len << " bytes read,  " << need_to_read << " bytes needed!" << std::endl;
   return (int) msg->bt_type;
 }
 

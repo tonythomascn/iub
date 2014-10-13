@@ -112,6 +112,17 @@ int main (int argc, char * argv[]){
       // handle all events
       for (int i = 0; i < n; ++i) { 
 	// TODO: if err happened 
+	if ((events[i].events & EPOLLERR) || 
+	    (events[i].events & EPOLLHUP) ||
+	    (!(events[i].events & EPOLLIN))) {
+	  /* An error has occured on this fd, or the socket is closed */
+	  std::cerr << "Epoll error or a leecher is disconnected!" << std::endl;
+	  close(events[i].data.fd);
+	  continue;
+	}
+
+	
+	// now process events
 	if (sfd == events[i].data.fd) { // if == sfd
 	  int sock = MSeeder.acceptLeecher();
 	  if (make_socket_non_blocking(sock) < 0) {
@@ -209,10 +220,6 @@ int main (int argc, char * argv[]){
   
   
   
-
-
-
-  releaseInfo(bt_args.bt_info);
   return 0;
 }
 
