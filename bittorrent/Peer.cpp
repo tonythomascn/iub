@@ -91,10 +91,20 @@ int SeederManager::acceptLeecher() {
 	struct sockaddr_in leecherAddr;
 	socklen_t addrLen = sizeof(leecherAddr);
 	printMSG("Waiting for a new connection ...\n");
-	int leecherSock = accept(sockid, (struct sockaddr *) &leecherAddr, &addrLen);
+    int leecherSock = 0;
+    while (true)
+    {
+	leecherSock = accept(sockid, (struct sockaddr *) &leecherAddr, &addrLen);
 	if (leecherSock < 0) {
-		std::cerr << "Failed to accept a new leecher!\n";
+        if (EAGAIN != errno){
+            std::cerr << "Failed to accept a new leecher!\n";
+            break;
+        }
 	}
+        else
+            break;
+        sleep(1);
+    }
 	return leecherSock;
 }
 
@@ -159,16 +169,28 @@ bool LeecherManager::connectSeeder(struct sockaddr_in seederAddr) {
 	}
 
 	// connect to a seeder
-	int status = connect(sockfd, (struct sockaddr *)&seederAddr, sizeof(seederAddr));
+    int status = 0;
+    
+    while (true){
+    status = connect(sockfd, (struct sockaddr *)&seederAddr, sizeof(seederAddr));
 	if (status < 0) {
+        printf("%d\n", errno);
+        if (EINPROGRESS != errno){
+            if (-1 != sockfd)
+                close(sockfd);
 		//std::cerr << "Failed to connect to the seeder!" << std::endl;
-		throw "Failed to connect to seeder!";
+		    throw "Failed to connect to seeder!";
+            break;
+        }
 	}
 	else{
 
 		printMSG("Connecting to the seeder ... OK!\n");
 		breturn = true;
+        break;
 	}
+        sleep(1);
+    }
 	return breturn;
 }
 
