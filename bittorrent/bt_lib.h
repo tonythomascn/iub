@@ -14,7 +14,8 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h> 
-
+#include <fcntl.h>
+#include <sys/epoll.h>
 #include "bt_lib.h"
 
 // control the verbose output
@@ -30,14 +31,14 @@ extern bool VERBOSE;
 /*Maxium number of connections*/
 #define MAX_CONNECTIONS 5
 
-/*initial port to try and open a listen socket on*/
-#define INIT_PORT 6667 
-
-/*max port to try and open a listen socket on*/
-#define MAX_PORT 6699
-
 /* size of handshake message */
 #define HANDESHAKE_SIZE (20 + 8 + 20 + 20)
+
+/* max buffer size */
+#define MAX_BUF_SZIE (1024 * 1024)
+
+/* max # of pieces */
+#define MAX_PIECES_NUM 1000
 
 /* max length for an ip*/
 #define MAX_IP 40
@@ -89,8 +90,6 @@ typedef struct {
   peer_t * peers[MAX_CONNECTIONS]; // array of peer_t pointers
   char id[ID_SIZE]; // id for this client
   //  unsigned int id; //this bt_clients id
-  int sockets[MAX_CONNECTIONS]; //Array of possible sockets
-  struct pollfd poll_sockets[MAX_CONNECTIONS]; //Array of pollfd for polling for input
   char ip[MAX_IP]; // to keep the string of an ip
   int port; // port for this client
   /* set once torrent is parsed */
@@ -105,7 +104,7 @@ typedef struct {
  **/
 
 typedef struct {
-  char * bitfield; //bitfield where each bit represents a piece that
+  char bitfield[MAX_PIECES_NUM]; //bitfield where each bit represents a piece that
                    //the peer has or doesn't have
   size_t size;//size of the bitfiled
 } bt_bitfield_t;
@@ -131,7 +130,7 @@ typedef struct bt_msg{
 
   //payload can be any of these
   union { 
-    bt_bitfield_t bitfiled;//send a bitfield
+    bt_bitfield_t bitfield;//send a bitfield
     int have; //what piece you have
     bt_piece_t piece; //a peice message
     bt_request_t request; //request messge
@@ -224,6 +223,12 @@ bt_info_t parse_torrent_content_new(char * buf, int bufSize);
 
 // clean the memory of bt_info_t info
 void releaseInfo(bt_info_t *);
+
+
+// by lgp8819@gmail.com
+int make_socket_non_blocking(int sfd);
+
+
 #endif
 
 
