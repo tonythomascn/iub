@@ -163,21 +163,26 @@ bool SeederManager::sendHandshake(int leecherSock) {
 
 
 bool SeederManager::recvHandshake(int leecherSock) {
-  char buf[MAX_BUF_SZIE];
+  char buf[HANDESHAKE_SIZE];
   int t;
-  bzero(buf, MAX_BUF_SZIE);
-  t = read(leecherSock, buf, MAX_BUF_SZIE);
+  bzero(buf, HANDESHAKE_SIZE);
+  t = read(leecherSock, buf, HANDESHAKE_SIZE);
   if (t < 0) {
     std::cerr << "Failed to handshake with XXX!" << std::endl;
     return false;
   }
-  buf[20] = '\0';
   if (t > 0) {
     // now mark leecherSock as handshaked
     this->handshaked[leecherSock] = true;
     printMSG("Recv handshake msg from leecher XXX ... OK!\n");
     // TODO: verify the handshake message, if failed, return false
-    printMSG("Verifying handshake msg from leecher XXX ... OK\n");
+    bool integ = integrityVerify(args->bt_info, sizeof(bt_info_t) - 10, buf + 20 + 8);
+    if (integ) {
+      printMSG("Verifying handshake msg from leecher XXX ... OK!\n");
+    } else {
+      printMSG("Verifying handshake msg from leecher XXX ... Failed!\n");
+      return false;
+    }
   }
   return true;
 }
@@ -236,7 +241,7 @@ bool SeederManager::processSock(int sock) {
   bt_msg_t *msg = (bt_msg_t *) buf;
   
   // process different types of msg
-  std::cerr << "Processing msg with msg_type [" << (int) (msg->bt_type) 
+  std::cerr << "\nProcessing msg with msg_type [" << (int) (msg->bt_type) 
 	    <<  "] from XXX ... " << std::endl;
   switch (msg->bt_type) {
   case 6: // msg:request
@@ -377,18 +382,25 @@ bool LeecherManager::connectSeeder(struct sockaddr_in seederAddr) {
 	return breturn;
 }
 bool LeecherManager::recvHandshake(int sockfd) {
-  char buf[MAX_BUF_SZIE];
+  char buf[HANDESHAKE_SIZE];
   int t;
-  bzero(buf, MAX_BUF_SZIE);
-  t = read(sockfd, buf, MAX_BUF_SZIE);
+  bzero(buf, HANDESHAKE_SIZE);
+  t = read(sockfd, buf, HANDESHAKE_SIZE);
   if (t < 0) {
     std::cerr << "Failed to handshake!" << std::endl;
     return false;
   }
-  std::cerr << "t = " << t << std::endl;
-  buf[20] = '\0';
   if (t > 0)
-    std::cerr << "Recv handshake msg from XXX ... OK!\n" << std::endl;
+    std::cerr << "Recv handshake msg from XXX ... OK!" << std::endl;
+
+  // TODO: verify the handshake message, if failed, return false
+  bool integ = integrityVerify(args->bt_info, sizeof(bt_info_t) - 10, buf + 20 + 8);
+  if (integ) {
+    printMSG("Verifying handshake msg from seeder XXX ... OK!\n");
+  } else {
+    printMSG("Verifying handshake msg from seeder XXX ... Failed!\n");
+    return false;
+  }
   return true;
 
 }
@@ -472,7 +484,7 @@ bool LeecherManager::processSock(int sock) {
     exit(1);
   }
   bt_msg_t *msg = (bt_msg_t *) buf;
-  std::cerr << "Processing msg with msg_type [" << (int) (msg->bt_type) <<  "] from XXX ... " << std::endl;
+  std::cerr << "\nProcessing msg with msg_type [" << (int) (msg->bt_type) <<  "] from XXX ... " << std::endl;
   switch (msg->bt_type) { // process diff types
     
   case 5: // recv  a bitfield
@@ -490,8 +502,22 @@ bool LeecherManager::processSock(int sock) {
     n_downloaded++; // ++ # of downloaded pieces
     int offset = piece.index * args->bt_info->piece_length + piece.begin;
     int piece_length = len - sizeof(bt_msg_t); // calc the size of the piece
+    bool integ = integrityVerify(buf + sizeof(bt_msg_t), piece_length, 
+			          args->bt_info->piece_hashes[piece.index]);
+    if (!integ) {
+      std::cerr << "Recieved broken piece from XXX at index [" << piece.index << "]!" << std::endl;
+      // resend
+      this->downloaded[piece.index] = 0; // set from 1 [in progress] to 2 [in need]
+      this->sendRequest(sock); // randomly resend a request
+      break;
+    } else {
+      std::cerr << "Verifying recieved piece from XXX at index ["
+		<< piece.index << "] ... OK!" << std::endl;
+    }
+
+
     if (saveToFile(args->f_save, buf + sizeof(bt_msg_t), offset, piece_length) > 0) { // save to file
-      printMSG("Piece %d downloaded from XXX, offset [%d], length [%d]!\n", 
+      printMSG("Piece %d from XXX, offset [%d], length [%d] downloaded and saved to file!\n", 
 	       piece.index, offset, piece_length);
     } else {
       printMSG("Failed to save piece %d:  offset [%d], length [%d]!\n", 
@@ -540,11 +566,11 @@ bool createHandshakeMsg(char *buf, bt_info_t *info,  char *id) {
   memset(buf, 0, HANDESHAKE_SIZE);
   buf[0] = (char) 19;
   strcpy(buf + 1, "BitTorrent Protocol");
-  unsigned char *data = (unsigned char *) info;
-  unsigned char hash[20];
-  SHA1(data, sizeof(data), hash);
-  char *md = (char *) hash;
-  strncpy(buf + 20 + 8, md, 20);
+  unsigned char hash[ID_SIZE + 5];
+  bzero(hash, ID_SIZE);
+  // the reason to -10 is that info->piece_hashes will not keep same
+  SHA1((unsigned char *) info, sizeof(bt_info_t) - 10, hash);
+  strncpy(buf + 20 + 8, (char *) hash, ID_SIZE);
   strncpy(buf + 20 +8 + 20, id, ID_SIZE);
   return true;
 }
@@ -643,6 +669,15 @@ int saveToFile(FILE *fp, char *src, int offset, int length) {
     return -1;
   }
   return length;
+}
+
+
+bool integrityVerify(void *buf, int length, char *hash) {
+  unsigned char hash_buf[ID_SIZE + 2];
+  bzero(hash_buf, ID_SIZE + 2);
+  SHA1((unsigned char *) buf, length, hash_buf);
+  // printMSG("Verifying data integrity...  OK!\n");
+  return (memcmp(hash_buf, hash, ID_SIZE) == 0);
 }
 
 

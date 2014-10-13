@@ -98,7 +98,11 @@ bool createPieceMsg(FILE *fp, char *buf, int &len, int offset,  bt_request_t);
 // if failed, return -1
 int saveToFile(FILE *fp, char *src, int offset, int length);
 
+// calc the sha1 of buf[0..length-1], compare with hash
+bool integrityVerify(void *buf, int length, char *hash);
+
 #endif
+
 
 
 

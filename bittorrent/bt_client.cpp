@@ -143,7 +143,11 @@ int main (int argc, char * argv[]){
 	else { // if != sfd
 	  int sock = events[i].data.fd;
 	  if (!MSeeder.handshaked[sock]) {
-	    MSeeder.recvHandshake(sock); // recieve handshake msg from leecher
+	    if (!MSeeder.recvHandshake(sock)) { // if failed to recv msg
+	      // can not handshake
+	      printMSG("Can not handshake with XXXX leecher!\n");
+	      continue;
+	    } 
 	    MSeeder.handshaked[sock] = true; // marked as handshaked
 	    MSeeder.sendBitfield(sock); // send its bitfield to sock
 	  }
@@ -197,13 +201,22 @@ int main (int argc, char * argv[]){
 	std::cerr << "File downloaded, now leecher is stoping ..." << std::endl;
 	break;
       }
+      if (MLeecher.n_sockets <= 0) {
+	std::cerr << "No alive connection, now leecher is stoping ..." << std::endl;
+	break;
+      }
       // handle all events
       for (int i = 0; i < n; ++i) {
 	if ((events[i].events | EPOLLIN) <= 0) continue;
 	int sock = events[i].data.fd;
 
 	if (!MLeecher.handshaked[sock]) { // if is some un-handshaked seeder
-	  MLeecher.recvHandshake(sock);
+	  if (!MLeecher.recvHandshake(sock)) { // handshake fail, torrents are diff
+	    printMSG("Can not handshake with XXX seeder!\n");
+	    close(sock);
+	    MLeecher.n_sockets--;
+	    continue;
+	  }
 	  MLeecher.sendHandshake(sock);
 	  MLeecher.handshaked[sock] = true;
 	} // if
