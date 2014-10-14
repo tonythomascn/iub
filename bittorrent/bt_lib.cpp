@@ -40,7 +40,7 @@ bool printMSG(const char *fmt, ...) {
 void calc_id(char * ip, unsigned short port, char *id){
     char data[256];
     int len;
-    
+    bzero(id, ID_SIZE);
     //format print
     len = snprintf(data,256,"%s%u",ip,port);
     
