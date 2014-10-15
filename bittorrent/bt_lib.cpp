@@ -37,16 +37,16 @@ bool printMSG(const char *fmt, ...) {
 
 
 void calc_id(char * ip, unsigned short port, char *id){
-	char data[256] = "\0";
-	int len;
-
-	//format print
-	len = snprintf(data,256,"%s%u",ip,port);
-
-	//id is just the SHA1 of the ip and port string
-	SHA1((unsigned char *) data, len, (unsigned char *) id); 
-
-	return;
+    char data[256];
+    int len;
+    bzero(id, ID_SIZE);
+    //format print
+    len = snprintf(data,256,"%s%u",ip,port);
+    
+    //id is just the SHA1 of the ip and port string
+    SHA1((unsigned char *) data, len, (unsigned char *) id); 
+    
+    return;
 }
 
 
