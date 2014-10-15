@@ -11,10 +11,11 @@
 #include <sys/types.h>
 #include <signal.h>
 #include "Peer.h"
-#include "bt_lib.h"
 #include <sys/epoll.h>
-
-// TODO:
+#include "bt_lib.h"
+#include "bt_setup.h"
+#include "CLog.h"
+//
 //    - release memeory of bt_args
 //    - update the Readme file
 
@@ -28,18 +29,12 @@ void tests() { // run  tests
 }
 
 
-#include "bt_lib.h"
-#include "bt_setup.h"
-#include "CLog.h"
+
 int main (int argc, char * argv[]){
 	bt_args_t bt_args;
-
-	// run test
-	//tests();
-
 	//parse cmd
 	parse_args(&bt_args, argc, argv);
-    printMSG("%s\n", bt_args.log_file);
+
 	//create log file
 	Init(bt_args.log_file, LOG_NOTIFY);
 
@@ -59,7 +54,7 @@ int main (int argc, char * argv[]){
 	printMSG("log_file: %s\n", bt_args.log_file);
 	printMSG("torrent_file: %s\n", bt_args.torrent_file);
 	printMSG("ip: %s\n", bt_args.ip);
-	// output out the torrent file information here
+	// output the torrent file information here
 	printMSG("\nTorrent INFO:\n");
 	printMSG("name: %s\n", torrent.name);
 	printMSG("piece_length: %ld bytes\n", torrent.piece_length);
@@ -74,8 +69,6 @@ int main (int argc, char * argv[]){
 	LOG(LOG_NOTIFY, "length: %ld bytes", torrent.length);
 	LOG(LOG_NOTIFY, "num_pieces: %ld\n", torrent.num_pieces);
 
-
-	
     int efd = 0;
 	try {
         //epoll variable
@@ -84,7 +77,8 @@ int main (int argc, char * argv[]){
         int sock = 0;
         int i;
 		// now create manager for peer
-		if (bt_args.mode == 's') { // run as seeder
+		if (bt_args.mode == 's') {
+            //-------------------seeder----------------------
 			SeederManager MSeeder (&bt_args);
 			int sfd = MSeeder.sockid;
 
@@ -92,7 +86,7 @@ int main (int argc, char * argv[]){
 			efd = epoll_create1(0);
 			if (efd == -1)
 				throw "Failed to create epoll!";
-
+            
 			// add to sfd to efd
 			event.data.fd = sfd;
 			event.events = EPOLLIN | EPOLLET;
@@ -111,11 +105,11 @@ int main (int argc, char * argv[]){
 							(!(events[i].events & EPOLLIN))) {
                         sock = events[i].data.fd;
 						// An error has occured on this fd, or the socket is closed /
-						Close(sock);
+						MSeeder.Close(sock);
+                        //MSeeder.delSocket();
 						printMSG("Epoll error or a leecher is disconnected!");
 						continue;
 					}
-
 					// now process events
 					if (sfd == events[i].data.fd) { // if == sfd
 						sock = MSeeder.acceptLeecher();
@@ -123,15 +117,24 @@ int main (int argc, char * argv[]){
 							printMSG("Accept leecher failed!\n");
 							continue;
 						}
+
 						// add sock into efd
 						event.data.fd = sock;
 						event.events = EPOLLIN | EPOLLET;
 						if (epoll_ctl(efd, EPOLL_CTL_ADD, sock, &event) < 0) {
 							close(efd);
+                            MSeeder.Close(sock);
 							throw "Failed to add socket to epoll!";
 						}
 
-						MSeeder.sendHandshake(sock); // send handshake msg to leecher
+                        if (!MSeeder.sendHandshake(sock)){ // send handshake msg to leecher
+                            // can not handshake
+                            epoll_ctl(efd, EPOLL_CTL_DEL, sock, NULL);
+                            printMSG("Failed to handshake with %s leecher!\n", MSeeder.getIdfromMap(sock).c_str());
+                            MSeeder.Close(sock);
+                            //MSeeder.delSocket();
+                            continue;
+                        }
 					}// if (sfd = ..
 					else { // if != sfd
 						int sock = events[i].data.fd;
@@ -139,39 +142,36 @@ int main (int argc, char * argv[]){
 							if (!MSeeder.recvHandshake(sock)) { // if failed to recv msg
 								// can not handshake
 								epoll_ctl(efd, EPOLL_CTL_DEL, sock, NULL);
-								printMSG("Can not handshake with %s leecher!\n", getIdfromMap(sock).c_str());
-                                Close(sock);
+								printMSG("Failed to handshake with %s leecher!\n", MSeeder.getIdfromMap(sock).c_str());
+                                MSeeder.Close(sock);
+                                //MSeeder.delSocket();
 								continue;
 							} 
 							MSeeder.handshaked[sock] = true; // marked as handshaked
 							if (!MSeeder.sendBitfield(sock)){
 								// can not handshake
-								Close(sock);
-								epoll_ctl(efd, EPOLL_CTL_DEL, sock, NULL);
+                                epoll_ctl(efd, EPOLL_CTL_DEL, sock, NULL);
+								MSeeder.Close(sock);
 							}// send its bitfield to sock
 						}
-
-						// work with handshake leecher
-						else if (!MSeeder.processSock(sock)) {
+						else if (!MSeeder.processSock(sock)) {// work with handshake leecher
 							// can not process
-							Close(sock);
-							epoll_ctl(efd, EPOLL_CTL_DEL, sock, NULL);
+                            epoll_ctl(efd, EPOLL_CTL_DEL, sock, NULL);
+							MSeeder.Close(sock);
 						} // else if
 					} // else
 				}//  for
-			} // while
+			} // while----------seeder end----------------
 		}
 
 		else {
-			// run as leecher
+			//--------------leecher-----------------
 			LeecherManager MLeecher (&bt_args);
 			MLeecher.connectSeeders();
 			// create epoll
 			efd = epoll_create1(0);
 			if (efd == -1) {
 				throw "Failed to create epoll!";
-				//std::cerr << "Failed to create epoll!" << std::endl;
-				//exit(1);
 			}
 
 			// add all sockfd into efd
@@ -184,8 +184,6 @@ int main (int argc, char * argv[]){
 				if (epoll_ctl(efd, EPOLL_CTL_ADD, sock, &event) < 0) {
 					close(efd);
 					throw "Failed to add sfd to efd!";
-					//std::cerr << "Failed to add sfd to efd!" << std::endl;
-					//exit(1);
 				}
 			}
 
@@ -193,25 +191,24 @@ int main (int argc, char * argv[]){
 			while (true) {
 				int n = epoll_wait(efd, events, MAX_CONNECTIONS, 2000);
 				if (MLeecher.isDownloadComplete()) {
-					printMSG("File downloaded, now leecher is stoping ...");
+					printMSG("File downloaded, now leecher is stoping ...\n");
+                    LOG(LOG_NOTIFY, "FILE DOWNLOAD COMPLETE");
 					break;
 				}
 				if (MLeecher.getSockNum() <= 0) {
-					printMSG("No alive connection, now leecher is stoping ...");
+					printMSG("No alive connection, now leecher is stoping ...\n");
 					break;
 				}
 				// handle all events
 				for (i = 0; i < n; ++i) {
-					if ((events[i].events | EPOLLIN) <= 0) continue;
+					//if ((events[i].events | EPOLLIN) <= 0) continue;
 					int sock = events[i].data.fd;
-
 					if (!MLeecher.handshaked[sock]) { // if is some un-handshaked seeder
 						if (!MLeecher.recvHandshake(sock)) {
                             // handshake fail, torrents are diff
-							printMSG("Can not handshake with %s seeder!\n", getIdfromMap(sock).c_str());
+							printMSG("Can not handshake with %s seeder!\n", MLeecher.getIdfromMap(sock).c_str());
                             epoll_ctl(efd, EPOLL_CTL_DEL, sock, NULL);
-							Close(sock);
-							MLeecher.delSocket();
+							MLeecher.Close(sock);
 							continue;
 						}
                         else{
@@ -219,22 +216,20 @@ int main (int argc, char * argv[]){
                                 MLeecher.handshaked[sock] = true;
                             else{
                                 epoll_ctl(efd, EPOLL_CTL_DEL, sock, NULL);
-                                Close(sock);
-                                MLeecher.delSocket();
+                                MLeecher.Close(sock);
                             }
                         }
 					} // if
 
 					// process handshaked seeder
 					else if (!MLeecher.processSock(sock)) {
-						printMSG("Failed to process the seeder %s!", getIdfromMap(sock).c_str());
+						printMSG("Failed to process the seeder %s!", MLeecher.getIdfromMap(sock).c_str());
                         epoll_ctl(efd, EPOLL_CTL_DEL, sock, NULL);
-                        Close(sock);
-                        MLeecher.delSocket();
+                        MLeecher.Close(sock);
 					} // else if
 				} // for
 			}// while
-		} // else run as a leecher
+		} // else ----------leecher end----------------------
 
 	} catch (char* msg) {
         //catch all fatal error here and output error msg

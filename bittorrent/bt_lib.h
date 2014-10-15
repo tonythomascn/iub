@@ -66,11 +66,11 @@ typedef struct _peer_t{
   int interested; //peer interested?
     _peer_t(){
         port = 0;
-        memset(id, ID_SIZE, 0);
+        memset(id, 0, ID_SIZE);
     }
     ~_peer_t(){
         port = 0;
-        memset(id, ID_SIZE, 0);
+        memset(id, 0, ID_SIZE);
     }
 }peer_t;
 
@@ -83,14 +83,14 @@ typedef struct _bt_info_t{
   long num_pieces; //number of pieces, computed based on above two values
   char ** piece_hashes; //pointer to 20 byte data buffers containing the sha1sum of each of the pieces
     _bt_info_t(){
-       memset(name, FILE_NAME_MAX, 0);
+       memset(name, 0, FILE_NAME_MAX);
         piece_length = 0;
         length = 0;
         num_pieces = 0;
         piece_hashes = NULL;
     }
     ~_bt_info_t(){
-        memset(name, FILE_NAME_MAX, 0);
+        memset(name, 0, FILE_NAME_MAX);
         piece_length = 0;
         length = 0;
         num_pieces = 0;
@@ -117,9 +117,9 @@ typedef struct _bt_args_t{
   /* set once torrent is parsed */
   bt_info_t * bt_info; //the parsed info for this torrent
     _bt_args_t(){
-        memset(save_file, FILE_NAME_MAX, 0);
-        memset(log_file, FILE_NAME_MAX, 0);
-        memset(torrent_file, FILE_NAME_MAX, 0);
+        memset(save_file, 0, FILE_NAME_MAX);
+        memset(log_file, 0, FILE_NAME_MAX);
+        memset(torrent_file, 0, FILE_NAME_MAX);
         f_save = NULL;
         n_peers = 0;
         memset(ip, MAX_IP, 0);
@@ -127,9 +127,9 @@ typedef struct _bt_args_t{
         bt_info = NULL;
     }
     ~_bt_args_t(){
-        memset(save_file, FILE_NAME_MAX, 0);
-        memset(log_file, FILE_NAME_MAX, 0);
-        memset(torrent_file, FILE_NAME_MAX, 0);
+        memset(save_file, 0, FILE_NAME_MAX);
+        memset(log_file, 0, FILE_NAME_MAX);
+        memset(torrent_file, 0, FILE_NAME_MAX);
         if (NULL != f_save){
             fclose(f_save);
             f_save = NULL;

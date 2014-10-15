@@ -37,7 +37,7 @@ bool printMSG(const char *fmt, ...) {
 
 
 void calc_id(char * ip, unsigned short port, char *id){
-	char data[256];
+	char data[256] = "\0";
 	int len;
 
 	//format print
@@ -286,7 +286,7 @@ int make_socket_non_blocking(int sockid)
 	{
 		/* Handle error */
 		//std::cerr << "Failed to set socket into nonblocking mode!\n";
-		Close(sockid);
+		close(sockid);
 		throw "Failed to get socket flag!";
 		return -1;
 	}
@@ -295,7 +295,7 @@ int make_socket_non_blocking(int sockid)
 	{
 		/* Handle error */
 		//std::cerr << "Failed to set socket into nonblocking mode!\n";
-		Close(sockid);
+		close(sockid);
 		throw "Failed to set socket into nonblocking mode!";
 		return -1;
 	}
@@ -305,12 +305,19 @@ int make_socket_non_blocking(int sockid)
 std::string getIdfromPeer(char*ip, unsigned short port){
 	char id[ID_SIZE] = "\0";
 	char returnid[ID_SIZE*2] = "\0";
-
+    
+    memset(id, 0x00, ID_SIZE);
 	calc_id(ip, port, id);
+    
+    memset(returnid, 0x00, ID_SIZE*2);
 	for (int i = 0; i < ID_SIZE; i++){
 		sprintf(&returnid[i*2], "%02x", id[i]);
 	}
-	//printf("%s\n", returnid);
+//    printf("%s:%u\n", ip, port);
+//    for(int i=0;i<ID_SIZE;i++){
+//        printf("%02x",id[i]);
+//    }
+//	printf("\n\n%s\n", returnid);
 	return returnid;
 }
 

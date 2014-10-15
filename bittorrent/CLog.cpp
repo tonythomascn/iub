@@ -75,7 +75,7 @@ std::string CLog::GetRelativeTimeStr()
     struct timeval current;
     gettimeofday(&current, NULL);
     char time[30] = "\0";
-    snprintf(time, 30, "%.2ld", ((m_timevalStart.tv_sec  - current.tv_sec) * 1000000 + m_timevalStart.tv_usec - current.tv_usec) / 1000000);
+    snprintf(time, 30, "%.2f", (double)((current.tv_sec - m_timevalStart.tv_sec) * 1000000 + current.tv_usec - m_timevalStart.tv_usec) / 1000000);
     
     return time;
 }
