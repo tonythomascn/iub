@@ -180,7 +180,6 @@ int main (int argc, char * argv[]){
 				MLeecher.handshaked[sock] = false; // marked as not yet handshaked
 				event.data.fd = sock;
 				event.events = EPOLLIN | EPOLLET;
-
 				if (epoll_ctl(efd, EPOLL_CTL_ADD, sock, &event) < 0) {
 					close(efd);
 					throw "Failed to add sfd to efd!";

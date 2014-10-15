@@ -16,7 +16,8 @@
 char message[FILE_NAME_MAX] = "\0";
 
 SeederManager::SeederManager(bt_args_t *btArg):
-n_sockets(0){
+n_sockets(0),
+m_ullUploaded(0){
 
 	// set temp peer to represent this seeder
 	peer_t thisPeer;
@@ -31,12 +32,6 @@ n_sockets(0){
 		throw "Failed to open socket!";
 	}
 	printMSG("Opening the socket ... OK\n");
-	// // add this sockid into sockets[0]
-	// sockets[n_sockets++] = sockid;
-
-	// // add this sockid into poll_sockets[]
-	// poll_sockets[0].fd = sockid;
-	// poll_sockets[0].events = POLLIN;
 
 	// bind the sock
 	int status = bind(sockid, (struct sockaddr *)&seederAddr, sizeof(struct sockaddr_in));
@@ -63,6 +58,7 @@ n_sockets(0){
 		btArg->port = seederAddr.sin_port;
 		//store seeder itself information
         ip_sock_id addr;
+        //printf("%s, %u\n", inet_ntoa(seederAddr.sin_addr), ntohs(seederAddr.sin_port));
         memcpy(addr.id, getIdfromPeer(inet_ntoa(seederAddr.sin_addr), ntohs(seederAddr.sin_port)).c_str(), ID_SIZE*2);
         memcpy(addr.ip, inet_ntoa(seederAddr.sin_addr), MAX_IP);
         addr.port = ntohs(seederAddr.sin_port);
@@ -132,9 +128,6 @@ int SeederManager::acceptLeecher() {
         this->handshaked[leecherSock] = false;
         this->n_sockets++;
     }
-	// sockets[n_sockets++] = leecherSock; // add leecherSock into sockets
-	// poll_sockets[n_sockets - 1].fd = leecherSock; // save descriptor
-	// poll_sockets[n_sockets - 1].events = POLLIN; // set ..
 
 	return leecherSock;
 }
@@ -285,7 +278,9 @@ bool SeederManager::processSock(int sock) {
                 LOG(LOG_NOTIFY, "MESSAGE PIECE TO peer_id:%s piece:%ld offset:%ld length:%ld\n", addr.id, request.index, offset, args->bt_info->length);
 			}
             //output minimum info: download status, number of connected peers, the amount of downloaded and uploaded
-            snprintf(message, FILE_NAME_MAX, "File: %s Progress: %.1f%% Peers: %d Uploaded: %ld KB\n", args->bt_info->name, (double)((offset + len) * 100 / args->bt_info->length), this->n_sockets, (offset + len) / 1024);
+            //snprintf(message, FILE_NAME_MAX, "File: %s Progress: %.1f%% Peers: %d Uploaded: %ld KB\n", args->bt_info->name, (double)((offset + len) * 100 / args->bt_info->length), this->n_sockets, (offset + len) / 1024);
+            m_ullUploaded += len;
+            snprintf(message, FILE_NAME_MAX, "File: %s Peers: %d Uploaded: %lld KB\n", args->bt_info->name, this->n_sockets, m_ullUploaded / 1024);
             fprintf(stdout, "%s", message);
 			break;
 		//case 4: //msg:have
@@ -305,7 +300,7 @@ SeederManager::~SeederManager() {
 	fclose(this->args->f_save);
 }
 
-LeecherManager::LeecherManager(bt_args_t *btArg) {
+LeecherManager::LeecherManager(bt_args_t *btArg){
 	// set # of sockets as 0
 	n_sockets = 0;
 	args = btArg;
@@ -341,6 +336,18 @@ bool LeecherManager::connectSeeder(struct sockaddr_in seederAddr) {
 		//std::cerr << "Failed to create socket" << std::endl;
 		throw "Failed to create socket!";
 	}
+    
+    struct timeval timeout;
+    timeout.tv_sec = SOCKETT_TIMEOUT;//socket timeout
+    timeout.tv_usec = 0;
+    if (setsockopt (sockfd, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(timeout)) < 0){
+        if (-1 != sockfd)
+            close(sockfd);
+    }
+    if (setsockopt (sockfd, SOL_SOCKET, SO_SNDTIMEO, (char *)&timeout, sizeof(timeout)) < 0){
+        if (-1 != sockfd)
+            close(sockfd);
+    }
     if (make_socket_non_blocking(sockfd) < 0){
         if (-1 != sockfd)
             close(sockfd);
@@ -353,14 +360,15 @@ bool LeecherManager::connectSeeder(struct sockaddr_in seederAddr) {
 			if (EINPROGRESS != errno){
 				if (-1 != sockfd)
 					Close(sockfd);
-                snprintf(message, FILE_NAME_MAX, "Failed to connect to the seeder %s!", getIdfromMap(sockfd).c_str());
+                snprintf(message, FILE_NAME_MAX, "Failed to connect to the seeder %s!\n", getIdfromMap(sockfd).c_str());
+                printMSG(message);
 				//std::cerr << "Failed to connect to the seeder XXX!" << std::endl;
-				throw message;
+				//throw message;
 				break;
 			}
 		}
 		else{
-			printMSG("Connecting to the seeder " + getIdfromMap(sockfd) + "... OK\n");
+			//printMSG("Connecting to the seeder " + getIdfromMap(sockfd) + "... OK\n");
 			breturn = true;
             //only successfully connected
             //store seeder information
@@ -370,6 +378,7 @@ bool LeecherManager::connectSeeder(struct sockaddr_in seederAddr) {
             addr.port = ntohs(seederAddr.sin_port);
             m_ipsockidMap.insert(std::pair<int, ip_sock_id>(sockfd, addr));
             //add socket into the array of sockets
+            //n_sockets++;
             sockets[n_sockets++] = sockfd;
 			break;
 		}
@@ -588,6 +597,7 @@ LeecherManager::~LeecherManager() {
 	for (int i = 0; i < this->n_sockets; ++i) { // close all connect sockets
 		Close(this->sockets[i]); 
 	}
+    n_sockets = 0;
 }
 
 

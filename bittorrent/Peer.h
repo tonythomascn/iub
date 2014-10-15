@@ -66,6 +66,7 @@ std::map <int, bool> handshaked; // to mark if a sock has handshaked or not
 private:
     std::map <int, ip_sock_id> m_ipsockidMap;
     int n_sockets; // # of sockets
+    unsigned long long m_ullUploaded;
   bt_args_t *args; 
   bool createBitfield(char *buf, int &len); // create a msg for bitfield 
 };

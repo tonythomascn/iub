@@ -55,7 +55,8 @@ extern bool VERBOSE;
 
 /*size (in bytes) of id field for peers*/
 #define ID_SIZE 20
-
+//socket timeout in seconds
+#define SOCKETT_TIMEOUT 5
 
 //holds information about a peer
 typedef struct _peer_t{
