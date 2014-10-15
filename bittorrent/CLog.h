@@ -10,7 +10,7 @@
 #define __bittorrent__CLog__
 
 #include <iostream>
-
+#include <stdarg.h>
 enum LogLevel
 {
     LOG_INFO = 1,
@@ -73,19 +73,21 @@ private:
      * @return current local time string
      */
     std::string GetCurTimeStr();
+    /**
+     * @brief Get relative time
+     * @return relative time string
+     */
+    std::string GetRelativeTimeStr();
 private:
     CFileOperation * m_pCFileOperation;
     std::string m_strLogName;
     int m_iLogLevel;
+    struct timeval m_timevalStart;
 };
 
-static CLog CLog;
-//void LOG(std::string strMessage, LogLevel emLogLevel)
-//{
-//    CLog.Log(strMessage, emLogLevel);
-//}
-
-///Example: LOG("hello again", LOG_WARNING);
-#define LOG(message, level) {CLog.Log(message, level);}
+static CLog CLOG;
+void Init(std::string strLogName, LogLevel emLogLevel);
+///Example: LOG(LOG_WARNING, "hello again %d", hello);
+void LOG(LogLevel level, const char*args, ...);
 
 #endif /* defined(__bittorrent__CLog__) */

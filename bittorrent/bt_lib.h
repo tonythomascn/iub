@@ -7,7 +7,6 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdarg.h>
-#include <poll.h>
 #include <string>
 //networking stuff
 #include <sys/types.h>
@@ -15,7 +14,6 @@
 #include <netinet/in.h>
 #include <netdb.h> 
 #include <fcntl.h>
-#include <sys/epoll.h>
 #include "bt_lib.h"
 
 // control the verbose output
@@ -60,33 +58,57 @@ extern bool VERBOSE;
 
 
 //holds information about a peer
-typedef struct peer{
+typedef struct _peer_t{
   unsigned char id[ID_SIZE]; //the peer id
   unsigned short port; //the port to connect n
   struct sockaddr_in sockaddr; //sockaddr for peer
   int choked; //peer choked?
   int interested; //peer interested?
+    _peer_t(){
+        port = 0;
+        memset(id, ID_SIZE, 0);
+    }
+    ~_peer_t(){
+        port = 0;
+        memset(id, ID_SIZE, 0);
+    }
 }peer_t;
 
 
 //holds information about a torrent file
-typedef struct {
+typedef struct _bt_info_t{
   char name[FILE_NAME_MAX]; //name of file
   long piece_length; //number of bytes in each piece
   long length; //length of the file in bytes
   long num_pieces; //number of pieces, computed based on above two values
   char ** piece_hashes; //pointer to 20 byte data buffers containing the sha1sum of each of the pieces
+    _bt_info_t(){
+       memset(name, FILE_NAME_MAX, 0);
+        piece_length = 0;
+        length = 0;
+        num_pieces = 0;
+        piece_hashes = NULL;
+    }
+    ~_bt_info_t(){
+        memset(name, FILE_NAME_MAX, 0);
+        piece_length = 0;
+        length = 0;
+        num_pieces = 0;
+        if (NULL != piece_hashes)//it is released in releaseInfo
+            piece_hashes = NULL;
+    }
 } bt_info_t;
 
 
 //holds all the agurments and state for a running the bt client
-typedef struct {
+typedef struct _bt_args_t{
   int verbose; //verbose level
   char mode;
   char save_file[FILE_NAME_MAX];//the filename to save to
   FILE * f_save;
   char log_file[FILE_NAME_MAX];//the log file
   char torrent_file[FILE_NAME_MAX];// *.torrent file
+    int n_peers;
   peer_t * peers[MAX_CONNECTIONS]; // array of peer_t pointers
   char id[ID_SIZE]; // id for this client
   //  unsigned int id; //this bt_clients id
@@ -94,8 +116,35 @@ typedef struct {
   int port; // port for this client
   /* set once torrent is parsed */
   bt_info_t * bt_info; //the parsed info for this torrent
-  
-
+    _bt_args_t(){
+        memset(save_file, FILE_NAME_MAX, 0);
+        memset(log_file, FILE_NAME_MAX, 0);
+        memset(torrent_file, FILE_NAME_MAX, 0);
+        f_save = NULL;
+        n_peers = 0;
+        memset(ip, MAX_IP, 0);
+        port = 0;
+        bt_info = NULL;
+    }
+    ~_bt_args_t(){
+        memset(save_file, FILE_NAME_MAX, 0);
+        memset(log_file, FILE_NAME_MAX, 0);
+        memset(torrent_file, FILE_NAME_MAX, 0);
+        if (NULL != f_save){
+            fclose(f_save);
+            f_save = NULL;
+        }
+        if (NULL != peers){
+            int i;
+            for (i = 0; i < n_peers; i++)
+                free(peers[i]);
+        }
+        n_peers = 0;
+        memset(ip, MAX_IP, 0);
+        port = 0;
+        if (NULL != bt_info)
+            bt_info = NULL;
+    }
 } bt_args_t;
 
 
@@ -103,28 +152,28 @@ typedef struct {
  * Message structures
  **/
 
-typedef struct {
+typedef struct _bt_bitfield_t{
   char bitfield[MAX_PIECES_NUM]; //bitfield where each bit represents a piece that
                    //the peer has or doesn't have
   size_t size;//size of the bitfiled
 } bt_bitfield_t;
 
-typedef struct{
-  int index; //which piece index
-  int begin; //offset within piece
-  int length; //amount wanted, within a power of two
+typedef struct _bt_request_t{
+  long index; //which piece index
+  long begin; //offset within piece
+  long length; //amount wanted, within a power of two
 } bt_request_t;
 
-typedef struct{
-  int index; //which piece index
-  int begin; //offset within piece
+typedef struct _bt_piece_t{
+  long index; //which piece index
+  long begin; //offset within piece
   char piece[0]; //pointer to start of the data for a piece
 } bt_piece_t;
 
 
 
 typedef struct bt_msg{
-  int length; //length of remaining message, 
+  long length; //length of remaining message,
               //0 length message is a keep-alive message
   unsigned int bt_type;//type of bt_mesage
 
@@ -228,6 +277,8 @@ void releaseInfo(bt_info_t *);
 // by lgp8819@gmail.com
 int make_socket_non_blocking(int sfd);
 
+//get id from the socket
+std::string getIdfromPeer(char*ip, unsigned short port);
 
 #endif
 

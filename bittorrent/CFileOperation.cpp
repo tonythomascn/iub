@@ -53,6 +53,7 @@ m_iFileDescriber(-1)
     }
     else
     {
+        //fprintf(stderr, "%s %s,%s,%d\n", strFileName.c_str(), __FILE__,__PRETTY_FUNCTION__,__LINE__);
         m_strLocalPath = "";
         m_strFileName = strFileName;
     }

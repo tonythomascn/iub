@@ -16,38 +16,37 @@
 #include "bt_lib.h"
 #include "bt_setup.h"
 #include "CFileOperation.h"
-#include "CLog.h"
+#include "Peer.h"
 #include <iostream>
 
-
 bool printMSG(std::string msg) {
-  if (VERBOSE) {
-    std::cerr << msg << std::endl;
-  }
-  return VERBOSE && !msg.empty();
+	if (VERBOSE) {
+		std::cerr << msg << std::endl;
+	}
+	return VERBOSE && !msg.empty();
 }
 
 bool printMSG(const char *fmt, ...) {
-  if (!VERBOSE) return false;
-  va_list args;
-  va_start(args, fmt);
-  vprintf(fmt, args);
-  va_end(args);
-  return true;
+	if (!VERBOSE) return false;
+	va_list args;
+	va_start(args, fmt);
+	vprintf(fmt, args);
+	va_end(args);
+	return true;
 }
 
 
 void calc_id(char * ip, unsigned short port, char *id){
-    char data[256];
-    int len;
-    
-    //format print
-    len = snprintf(data,256,"%s%u",ip,port);
-    
-    //id is just the SHA1 of the ip and port string
-    SHA1((unsigned char *) data, len, (unsigned char *) id); 
-    
-    return;
+	char data[256];
+	int len;
+
+	//format print
+	len = snprintf(data,256,"%s%u",ip,port);
+
+	//id is just the SHA1 of the ip and port string
+	SHA1((unsigned char *) data, len, (unsigned char *) id); 
+
+	return;
 }
 
 
@@ -64,35 +63,35 @@ void calc_id(char * ip, unsigned short port, char *id){
  *   
  **/
 int init_peer(peer_t *peer, char * id, char * ip, unsigned short port){
-    
-    struct hostent * hostinfo;
-    //set the host id and port for referece
-    memcpy(peer->id, id, ID_SIZE);
-    peer->port = port;
-    
-    //get the host by name
-    if((hostinfo = gethostbyname(ip)) ==  NULL){
-        perror("gethostbyname failure, no such host?");
-        herror("gethostbyname");
-        exit(1);
-    }
-    
-    //zero out the sock address
-    bzero(&(peer->sockaddr), sizeof(peer->sockaddr));
-    
-    //set the family to AF_INET, i.e., Iternet Addressing
-    peer->sockaddr.sin_family = AF_INET;
-    
-    //copy the address to the right place
-    bcopy((char *) (hostinfo->h_addr), 
-          (char *) &(peer->sockaddr.sin_addr.s_addr),
-          hostinfo->h_length);
-    
-    //encode the port
-    peer->sockaddr.sin_port = htons(port);
-    
-    return 0;
-    
+
+	struct hostent * hostinfo;
+	//set the host id and port for referece
+	memcpy(peer->id, id, ID_SIZE);
+	peer->port = port;
+
+	//get the host by name
+	if((hostinfo = gethostbyname(ip)) ==  NULL){
+		perror("gethostbyname failure, no such host?");
+		herror("gethostbyname");
+		exit(1);
+	}
+
+	//zero out the sock address
+	bzero(&(peer->sockaddr), sizeof(peer->sockaddr));
+
+	//set the family to AF_INET, i.e., Iternet Addressing
+	peer->sockaddr.sin_family = AF_INET;
+
+	//copy the address to the right place
+	bcopy((char *) (hostinfo->h_addr), 
+			(char *) &(peer->sockaddr.sin_addr.s_addr),
+			hostinfo->h_length);
+
+	//encode the port
+	peer->sockaddr.sin_port = htons(port);
+
+	return 0;
+
 }
 
 /**
@@ -102,47 +101,47 @@ int init_peer(peer_t *peer, char * id, char * ip, unsigned short port){
  *
  **/
 void print_peer(peer_t *peer){
-    int i;
-    
-    if(peer){
-        printf("peer: %s:%u ",
-               inet_ntoa(peer->sockaddr.sin_addr),
-               peer->port);
-        printf("id: ");
-        for(i=0;i<ID_SIZE;i++){
-            printf("%02x",peer->id[i]);
-        }
-        printf("\n");
-    }
+	int i;
+
+	if(peer){
+		printf("peer: %s:%u ",
+				inet_ntoa(peer->sockaddr.sin_addr),
+				peer->port);
+		printf("id: ");
+		for(i=0;i<ID_SIZE;i++){
+			printf("%02x",peer->id[i]);
+		}
+		printf("\n");
+	}
 }
 
 
 
 bt_info_t parse_torrent(char * torrent_file)
 {
-    if (NULL == torrent_file)
-    {
-        exit(EXIT_FAILURE);
-    }
-    //copy torrent file over
-    std::string strtorrent = torrent_file;
-    //strncpy(torrent_info.name, torrent_file, FILE_NAME_MAX);
-    if (!strtorrent.find(".torrent"))
-    {
-        LOG("It is NOT a torrent.", LOG_ERROR);
-        exit(EXIT_FAILURE);
-    }
-    //read torrent
-    char buffer[TORRENT_FILE_MAX_SIZE];
-    int buffer_size = 0;
-    CFileOperation cfileoperation;
-    buffer_size = cfileoperation.ReadFile(torrent_file, buffer, 0, TORRENT_FILE_MAX_SIZE);
-    if (0 >= buffer_size)
-    {
-        LOG("Read nothing from the torrent.", LOG_WARNING);
-    }
-    //analyze torrent content
-    return parse_torrent_content_new(buffer, buffer_size);
+	if (NULL == torrent_file)
+	{
+		exit(EXIT_FAILURE);
+	}
+	//copy torrent file over
+	std::string strtorrent = torrent_file;
+	//strncpy(torrent_info.name, torrent_file, FILE_NAME_MAX);
+	if (!strtorrent.find(".torrent"))
+	{
+		printMSG("It is NOT a torrent.");
+		exit(EXIT_FAILURE);
+	}
+	//read torrent
+	char buffer[TORRENT_FILE_MAX_SIZE];
+	int buffer_size = 0;
+	CFileOperation cfileoperation;
+	buffer_size = cfileoperation.ReadFile(torrent_file, buffer, 0, TORRENT_FILE_MAX_SIZE);
+	if (0 >= buffer_size)
+	{
+		printMSG("Read nothing from the torrent.");
+	}
+	//analyze torrent content
+	return parse_torrent_content_new(buffer, buffer_size);
 }
 
 
@@ -154,152 +153,166 @@ bt_info_t parse_torrent(char * torrent_file)
 // set length be 5
 // move buf -> "fg..."
 char *getIntChars(char*& buf, long &length) {
-  char *st = buf;
-  while (buf[0] != ':') buf++;
-  buf[0] = '\0';
-  ++buf;
-  length = atoi(st);
-  st = buf;
-  buf += length;
-  return st;
+	char *st = buf;
+	while (buf[0] != ':') buf++;
+	buf[0] = '\0';
+	++buf;
+	length = atoi(st);
+	st = buf;
+	buf += length;
+	return st;
 }
 
 // buf -> "i12345e6:sf..."
 // return 12345
 // move buf -> "6:sf..."
 long get_iNUMe(char*& buf) {
-  char *st = ++buf;
-  while (buf[0] != 'e') buf++;
-  buf[0] = '\0';
-  buf++;
-  return strtol(st, NULL, 0);//atoi(st);
+	char *st = ++buf;
+	while (buf[0] != 'e') buf++;
+	buf[0] = '\0';
+	buf++;
+	return strtol(st, NULL, 0);//atoi(st);
 }
 
 // use to keep key / value structure
 struct HeadValue {
-  char *pValue;
-  long length;
-  long iValue;
-  //char ctype;
+	char *pValue;
+	long length;
+	long iValue;
+	//char ctype;
 };
- 
+
 void recusiveParse(char*& buf, HeadValue &hv, bt_info_t& info) {
-  // if skip the key -> value (i.e. do not store)
-  static bool infoQ = false;
-  if (buf[0] == 'e') return;
+	// if skip the key -> value (i.e. do not store)
+	static bool infoQ = false;
+	if (buf[0] == 'e') return;
 
-  if (buf[0] == 'd') {
-    ++buf;
-    while (buf[0] != 'e') {
-      recusiveParse(buf, hv, info);
+	if (buf[0] == 'd') {
+		++buf;
+		while (buf[0] != 'e') {
+			recusiveParse(buf, hv, info);
 
-      // convert hv.pValue to string
-      char head[MAX_ITEM_SIZE];
-      memcpy(head, hv.pValue, hv.length);
-      head[hv.length] = '\0';
-      std::string sHead(head);
-      if (!infoQ && sHead == "info" && buf[0] == 'd') {
-      	infoQ = true;
-      }
-      if (infoQ && sHead == "files" && buf[0] == 'l') {
-	hv.length = 0;
-      }
-      // get the value part
-      recusiveParse(buf, hv,  info);
+			// convert hv.pValue to string
+			char head[MAX_ITEM_SIZE];
+			memcpy(head, hv.pValue, hv.length);
+			head[hv.length] = '\0';
+			std::string sHead(head);
+			if (!infoQ && sHead == "info" && buf[0] == 'd') {
+				infoQ = true;
+			}
+			if (infoQ && sHead == "files" && buf[0] == 'l') {
+				hv.length = 0;
+			}
+			// get the value part
+			recusiveParse(buf, hv,  info);
 
-      if (infoQ) {
-	// keep record
-	if (sHead == "length") {
-	    info.length += hv.iValue;
+			if (infoQ) {
+				// keep record
+				if (sHead == "length") {
+					info.length += hv.iValue;
+				}
+				if (sHead == "name") {
+					memcpy(info.name, hv.pValue, hv.length);
+					info.name[hv.length] = '\0';
+				}
+				if (sHead == "piece length") {
+					info.piece_length = hv.iValue;
+				}
+				if (sHead == "pieces") {
+					info.num_pieces =  (info.length + info.piece_length - 1) / info.piece_length;
+					if (info.num_pieces * ID_SIZE != hv.length) {
+						perror("Error .torrent file!\n");
+						exit(1);
+						//return;
+					}
+					info.piece_hashes = (char **) malloc(info.num_pieces * sizeof(char *));
+					// now read piece_hashes
+					for (int i = 0; i < info.num_pieces; ++i) {
+						char *hashBuf = (char *) malloc(2 + ID_SIZE * sizeof(char));
+						bzero(hashBuf, 2 + ID_SIZE);
+						memcpy(hashBuf, i * ID_SIZE + hv.pValue, ID_SIZE);
+						hashBuf[ID_SIZE] = '\0';
+						//puts(hashBuf);
+						//puts("\n----------------------------\n");
+						info.piece_hashes[i] = hashBuf;
+					}
+				}
+			}// if
+		}// while
+		buf++;
+	} 
+
+	else if (buf[0] == 'l') {
+		++buf;
+		while (buf[0] != 'e') recusiveParse(buf, hv, info);
+		++buf;
 	}
-	if (sHead == "name") {
-	  memcpy(info.name, hv.pValue, hv.length);
-	  info.name[hv.length] = '\0';
-	}
-	if (sHead == "piece length") {
-	  info.piece_length = hv.iValue;
-	}
-	if (sHead == "pieces") {
-	  info.num_pieces =  (info.length + info.piece_length - 1) / info.piece_length;
-	  if (info.num_pieces * ID_SIZE != hv.length) {
-	    perror("Error .torrent file!\n");
-	    exit(1);
-	    //return;
-	  }
-	  info.piece_hashes = (char **) malloc(info.num_pieces * sizeof(char *));
-	  // now read piece_hashes
-	  for (int i = 0; i < info.num_pieces; ++i) {
-	    char *hashBuf = (char *) malloc(2 + ID_SIZE * sizeof(char));
-	    bzero(hashBuf, 2 + ID_SIZE);
-	    memcpy(hashBuf, i * ID_SIZE + hv.pValue, ID_SIZE);
-	    hashBuf[ID_SIZE] = '\0';
-	    //puts(hashBuf);
-	    //puts("\n----------------------------\n");
-	    info.piece_hashes[i] = hashBuf;
-	  }
-	}
-      }// if
-    }// while
-    buf++;
-  } 
 
-  else if (buf[0] == 'l') {
-    ++buf;
-    while (buf[0] != 'e') recusiveParse(buf, hv, info);
-    ++buf;
-  }
+	else if (buf[0] == 'i') {
+		hv.iValue = get_iNUMe(buf);
+	}
 
-  else if (buf[0] == 'i') {
-    hv.iValue = get_iNUMe(buf);
-  }
-
-  else if (buf[0] <= '9' && buf[0] >= '0') {
-    hv.pValue = getIntChars(buf, hv.length);
-  }
+	else if (buf[0] <= '9' && buf[0] >= '0') {
+		hv.pValue = getIntChars(buf, hv.length);
+	}
 }
 
 
 bt_info_t parse_torrent_content_new(char * buf, int bufSize) {
-  bt_info_t info;
-  memset(&info, 0, sizeof(info));
-  HeadValue hv;
-  info.length = 0;
-  recusiveParse(buf, hv, info);
-  return info;
+	bt_info_t info;
+	memset(&info, 0, sizeof(info));
+	HeadValue hv;
+	info.length = 0;
+	recusiveParse(buf, hv, info);
+	return info;
 }
 
 
 // clean the memory of info
 void releaseInfo(bt_info_t *info) {
-  char **tmp = info->piece_hashes;
-  for (int i = 0; i < info->num_pieces; ++i)
-    free(tmp[i]);
-  free(tmp);
+	char **tmp = info->piece_hashes;
+	for (int i = 0; i < info->num_pieces; ++i)
+		free(tmp[i]);
+	free(tmp);
 }
 
 
-// by lgp8819@gmail.com
-int make_socket_non_blocking(int sfd)
+// set socket non blocking
+int make_socket_non_blocking(int sockid)
 {
-	int flags, s;
-	flags = fcntl(sfd, F_GETFL,0);
-	if(flags == -1)
+	int flags;
+	/* Set socket to non-blocking */
+	if ((flags = fcntl(sockid, F_GETFL, 0)) < 0)
 	{
-		perror("fcntl");
-		return-1;
+		/* Handle error */
+		//std::cerr << "Failed to set socket into nonblocking mode!\n";
+		Close(sockid);
+		throw "Failed to get socket flag!";
+		return -1;
 	}
 
-	flags|= O_NONBLOCK;
-	s =fcntl(sfd, F_SETFL, flags);
-	if(s ==-1)
+	if (fcntl(sockid, F_SETFL, flags | O_NONBLOCK) < 0)
 	{
-		perror("fcntl");
-		return-1;
+		/* Handle error */
+		//std::cerr << "Failed to set socket into nonblocking mode!\n";
+		Close(sockid);
+		throw "Failed to set socket into nonblocking mode!";
+		return -1;
 	}
 	return 0;
 }
+//calc id from ip and port
+std::string getIdfromPeer(char*ip, unsigned short port){
+	char id[ID_SIZE] = "\0";
+	char returnid[ID_SIZE*2] = "\0";
 
-
+	calc_id(ip, port, id);
+	for (int i = 0; i < ID_SIZE; i++){
+		sprintf(&returnid[i*2], "%02x", id[i]);
+	}
+	//printf("%s\n", returnid);
+	return returnid;
+}
 
 
 
