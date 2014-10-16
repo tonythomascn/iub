@@ -126,7 +126,7 @@ private:
 
 
 /**
- * 定时线程
+ * Timer thread
  */
 class CTimer
 {

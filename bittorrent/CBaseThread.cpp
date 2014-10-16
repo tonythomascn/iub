@@ -260,8 +260,7 @@ CTimerThread::CTimerThread(const std::string &ThreadName,bool bAutoRun )
 
 CTimerThread::~CTimerThread()
 {
-    //关闭Timer线程
-    //WaitThreadExit();
+    WaitThreadExit();
 }
 
 

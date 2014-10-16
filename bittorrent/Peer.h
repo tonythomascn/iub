@@ -49,24 +49,20 @@ public:
   bool sendHandshake(int leecherSock); //send handshake Msg to the dest leecherSock
   bool recvHandshake(int leecherSock); //recv handshake Msg from leecherSock
   bool processSock(int sock); // process a given sock, read data and take actions
-  //
-  //int sockets[MAX_CONNECTIONS]; //Array of possible sockets
-  //struct pollfd poll_sockets[MAX_CONNECTIONS]; //Array of pollfd for polling for input
-    //int getSockNum() {return n_sockets;}
-    //void addSocket() {n_sockets++;}
-    //void delSocket() {n_sockets--;}
-  int sockid;
+  int sockid;//seeder socket(its own socket)
   bool sendBitfield(int sock); // send msg of bitfield to sock
 std::map <int, bool> handshaked; // to mark if a sock has handshaked or not
   ~SeederManager();
-    //get ip, id, port from the map to store leecher informations
+    //get ip, id, port from the map to store peer informations
     bool getAddrfromMap(int socket, ip_sock_id &addr);
+    //get peer id from the info map
     std::string getIdfromMap(int socket);
+    //close socket, socket number minus 1, erase the peer info from the map
     bool Close(int socket);
 private:
-    std::map <int, ip_sock_id> m_ipsockidMap;
+    std::map <int, ip_sock_id> m_ipsockidMap;//all the socket id store in this
     int n_sockets; // # of sockets
-    unsigned long long m_ullUploaded;
+    unsigned long long m_ullUploaded;//how many bytes has been uploaded
   bt_args_t *args; 
   bool createBitfield(char *buf, int &len); // create a msg for bitfield 
 };
@@ -94,12 +90,14 @@ public:
   ~LeecherManager();
     //get ip, id, port from the map to store seeder informations
     bool getAddrfromMap(int socket, ip_sock_id &addr);
+    //get peer id from the info map
     std::string getIdfromMap(int socket);
+    //close socket, socket number minus 1, erase the peer info from the map
     bool Close(int socket);
 private:
       int n_sockets; // # of sockets
     int sockets[MAX_CONNECTIONS]; //Array of possible sockets
-    std::map <int, ip_sock_id> m_ipsockidMap;
+    std::map <int, ip_sock_id> m_ipsockidMap;//all the socket id store in this
   bt_args_t *args;
   bool connectSeeder(struct sockaddr_in);
   bool sendRequest(int sock, long index, long begin, long length); // send request msg to sock
