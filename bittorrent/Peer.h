@@ -15,20 +15,20 @@
 //std::string getPeerDesc(struct sockaddr_in); // return a description of a peer
 
 typedef struct _ip_sock_id{
-char id[ID_SIZE*2]; // id for this client
-//  unsigned int id; //this bt_clients id
-char ip[MAX_IP]; // to keep the string of an ip
-unsigned short port; // port for this client
-    _ip_sock_id(){
-        memset(id, 0x00, ID_SIZE*2);
-        memset(ip, 0, MAX_IP);
-        port = 0;
-    }
-    ~_ip_sock_id(){
-        memset(id, 0x00, ID_SIZE*2);
-        memset(ip, 0, MAX_IP);
-        port = 0;
-    }
+  char id[ID_SIZE*2]; // id for this client
+  //  unsigned int id; //this bt_clients id
+  char ip[MAX_IP]; // to keep the string of an ip
+  unsigned short port; // port for this client
+  _ip_sock_id(){
+    memset(id, 0x00, ID_SIZE*2);
+    memset(ip, 0, MAX_IP);
+    port = 0;
+  }
+  ~_ip_sock_id(){
+    memset(id, 0x00, ID_SIZE*2);
+    memset(ip, 0, MAX_IP);
+    port = 0;
+  }
 }ip_sock_id;
 
 // // class for a seeder
@@ -43,7 +43,7 @@ class Leecher {
 
 // manager of a seeder
 class SeederManager {
-public:
+ public:
   SeederManager(bt_args_t *btArg);   //bind to ip:port, and link to the parsed bt_args
   int acceptLeecher();    // try to accept a new leecher, return leecher sockfd 
   bool sendHandshake(int leecherSock); //send handshake Msg to the dest leecherSock
@@ -51,18 +51,18 @@ public:
   bool processSock(int sock); // process a given sock, read data and take actions
   int sockid;//seeder socket(its own socket)
   bool sendBitfield(int sock); // send msg of bitfield to sock
-std::map <int, bool> handshaked; // to mark if a sock has handshaked or not
+  std::map <int, bool> handshaked; // to mark if a sock has handshaked or not
   ~SeederManager();
-    //get ip, id, port from the map to store peer informations
-    bool getAddrfromMap(int socket, ip_sock_id &addr);
-    //get peer id from the info map
-    std::string getIdfromMap(int socket);
-    //close socket, socket number minus 1, erase the peer info from the map
-    bool Close(int socket);
-private:
-    std::map <int, ip_sock_id> m_ipsockidMap;//all the socket id store in this
-    int n_sockets; // # of sockets
-    unsigned long long m_ullUploaded;//how many bytes has been uploaded
+  //get ip, id, port from the map to store peer informations
+  bool getAddrfromMap(int socket, ip_sock_id &addr);
+  //get peer id from the info map
+  std::string getIdfromMap(int socket);
+  //close socket, socket number minus 1, erase the peer info from the map
+  bool Close(int socket);
+ private:
+  std::map <int, ip_sock_id> m_ipsockidMap;//all the socket id store in this
+  int n_sockets; // # of sockets
+  unsigned long long m_ullUploaded;//how many bytes has been uploaded
   bt_args_t *args; 
   bool createBitfield(char *buf, int &len); // create a msg for bitfield 
 };
