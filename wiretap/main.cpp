@@ -35,11 +35,11 @@ typedef STRU_STAT::iterator IT_STRU_STAT;
 
 //=== summary ===
 int iFirstPacketFlag = 0;
-timeval iFirstPacketTime;//first packet capture time
+timeval firstPacketTime;//first packet capture time
 int iLastPacketFlag = 0;
-timeval iLastPacketTime;//last packet capture time
+timeval lastPacketTime;//last packet capture time
 int iLargestPacket = 0;//largest packet size
-int iSmallestPacket = ETHER_MAX_LEN;//smallest packet size
+int iSmallestPacket = 0;//smallest packet size
 long lPktNumber = 0;//total packet number
 unsigned long long ullTotalPktSize = 0;//total packet size
 
@@ -75,6 +75,8 @@ void usage(FILE * file);
 std::string parse_args(int argc,  char * argv[]);
 //init tcpflags, set every flag's number be 0
 void initTCPFlags();
+//print a stat map
+void printStat(STRU_STAT stat);
 //print all the statistics
 void printStat();
 //compare two unsigned char string, return 0 if same
@@ -152,18 +154,20 @@ void initTCPFlags(){
 }
 //parse every packet
 void callback(u_char *arg_array, const struct pcap_pkthdr *h, const u_char *bytes){
-	//timeval now  = h->ts;
+	lastPacketTime = h->ts;
 	bpf_u_int32 length = h->len;
 	if (0 == iFirstPacketFlag){
 		//get the first packet's time as the start time to capture packets
-		iFirstPacketTime = h->ts;
+		firstPacketTime = h->ts;
 		iFirstPacketFlag = 1;
 	}
 	//check it's the largest or smallest
-	if (length > iLargestPacket)
-		iLargestPacket = length;
+    if (0 == lPktNumber)
+        iLargestPacket = iSmallestPacket = length;
+    if (length > iLargestPacket){
+        iLargestPacket = length;
+    }
     else if (length < iSmallestPacket){
-        //std::cout << "length:" << length << "iSmallestPacket"<<iSmallestPacket << std::endl;
 		iSmallestPacket = length;
     }
 	lPktNumber++;
@@ -244,8 +248,8 @@ void callback(u_char *arg_array, const struct pcap_pkthdr *h, const u_char *byte
 			checkIpExsit(destTCPPorts, msg);
 			memset(msg, 0x00, MAX_FILE_NAME);
             
-            //tcp flags
-            if (1 == ntohs(tcp->fin))
+            //TODO flag is not correct tcp flags
+            if (1 == tcp->fin)
                 checkIpExsit(TCPFlags, (u_char*)"FIN");
             else if (1 == tcp->syn)
                 checkIpExsit(TCPFlags, (u_char*)"SYN");
@@ -386,20 +390,19 @@ void checkIpExsit(STRU_STAT &statIp, u_char * Ip){
 	IT_STRU_STAT it = statIp.begin();
 	for (; it != statIp.end(); it++){
 		if (0 == compare(Ip, it->first, strlen((char*)Ip))){
-			//find same one
+			//find the same one
             //iflag = 1;
 			break;
 		}
 	}
 	if (it != statIp.end()){
-		//std::cout << it->first << ":" << it->second << std::endl;
 		it->second++;
 	}
 	else{
 		u_char *msg =  (u_char *)malloc(sizeof(u_char *) * MAX_FILE_NAME);
 		memset(msg, 0x00, MAX_FILE_NAME);
 		memcpy(msg, Ip, strlen((char*)Ip));
-		//std::cout << msg << std::endl;
+        if (0 == strcmp(msg,"URG")) std::cout << msg << std::endl;
 		statIp.insert(std::pair<u_char*, int>(msg, 1));
 	}
 	return;
@@ -414,9 +417,13 @@ int compare(unsigned char *a, unsigned char *b, ssize_t size) {
 
 void printStat(){
 	IT_STRU_STAT it;
+    time_t t = (time_t)firstPacketTime.tv_sec;
+    tm capturetime;
+    char buf[80] = "\0";
+    strftime(buf,80,"%F %H:%M:%S %Z",localtime_r(&t, &capturetime));
 	std::cout << "=== Packet capture summary ===" << std::endl << std::endl <<
-		"Start date:" << std::endl <<
-		"Duration:" << std::endl <<
+		"Start date:" << buf <<std::endl <<
+		"Duration:" << lastPacketTime.tv_sec - firstPacketTime.tv_sec << " seconds" <<std::endl <<
 		"# Packets:" << lPktNumber << std::endl <<
 		"Smallest:" << iSmallestPacket << std::endl <<
 		"Largest:" << iLargestPacket << std::endl <<
@@ -424,118 +431,63 @@ void printStat(){
 
 	std::cout << "=== Link layer ===" << std::endl << std::endl;
 	std::cout << "--- Source ethernet addresses ---" << std::endl << std::endl;
-	//std::cout << sourceEthernet.size() << std::endl << std::endl;
-	for (it = sourceEthernet.begin(); it != sourceEthernet.end(); it++){
-        std::cout << it->first;
-        std::cout.width(2);
-        std::cout << "\t" << it->second << std::endl;
-	}
+    printStat(sourceEthernet);
+
 	std::cout << std::endl << std::endl << "--- Destination ethernet addresses ---" << std::endl << std::endl;
-	//std::cout << destEthernet.size() << std::endl << std::endl;
-	for (it = destEthernet.begin(); it != destEthernet.end(); it++){
-        std::cout << it->first;
-        std::cout.width(2);
-		std::cout << "\t" << it->second << std::endl;
-	}
+    printStat(destEthernet);
+    
 	std::cout << std::endl << "=== Network layer ===" << std::endl << std::endl;
 	std::cout <<"--- Network layer protocols ---" << std::endl;
-	for (it = networkProtocols.begin(); it != networkProtocols.end(); it++){
-		std::cout.flags(std::ios::right);
-        std::cout << it->first;
-        std::cout.flags(std::ios::left);
-        std::cout.width(2);
-		std::cout << "\t" << it->second << std::endl;
-	}
+    printStat(networkProtocols);
+
 	std::cout << std::endl << "--- Source IP addresses ---" << std::endl << std::endl;
-	for (it = sourceIp.begin(); it != sourceIp.end(); it++){
-        std::cout << it->first;
-        std::cout.width(5);
-        std::cout << "\t" << it->second << std::endl;
-	}
+    printStat(sourceIp);
+
 	std::cout << std::endl << "--- Destination IP addresses ---" << std::endl <<std::endl;
-	for (it = destIp.begin(); it != destIp.end(); it++){
-		std::cout.flags(std::ios::right);
-        std::cout << it->first;
-        std::cout.width(5);
-        std::cout.flags(std::ios::left);
-		std::cout << "\t" << it->second << std::endl;
-	}
+    printStat(destIp);
+
 	std::cout << std::endl << "--- Unique ARP participants ---" << std::endl <<std::endl;
-	for (it = arpParticipants.begin(); it != arpParticipants.end(); it++){
-		std::cout.flags(std::ios::right);
-        std::cout << it->first;
-        std::cout.flags(std::ios::left);
-		std::cout << "\t" << it->second << std::endl;
-	}
+    printStat(arpParticipants);
+
 	std::cout << std::endl << "=== Transport layer ===" << std::endl << std::endl;
 	std::cout <<"--- Transport layer protocols ---" << std::endl << std::endl;
-	for (it = transportProtocols.begin(); it != transportProtocols.end(); it++){
-		std::cout.flags(std::ios::right);
-        std::cout << it->first;
-        std::cout.flags(std::ios::left);
-		std::cout << "\t" << it->second << std::endl;
-	}
+    printStat(transportProtocols);
+
 	std::cout << std::endl << "=== Transport layer: TCP ===" << std::endl << std::endl;
 	std::cout << "--- Source TCP ports ---" << std::endl << std::endl;
-	for (it = sourceTCPPorts.begin(); it != sourceTCPPorts.end(); it++){
-		std::cout.flags(std::ios::right);
-        std::cout << it->first;
-        std::cout.flags(std::ios::left);
-		std::cout << "\t" << it->second << std::endl;
-	}
+    printStat(sourceTCPPorts);
 	std::cout << std::endl << "--- Destination TCP ports ---" << std::endl <<std::endl;
-	for (it = destTCPPorts.begin(); it != destTCPPorts.end(); it++){
-		std::cout.flags(std::ios::right);
-        std::cout << it->first;
-        std::cout.flags(std::ios::left);
-		std::cout << "\t" << it->second << std::endl;
-	}
+    printStat(destTCPPorts);
 	std::cout << std::endl << "--- TCP flags ---" << std::endl <<std::endl;
-	for (it = TCPFlags.begin(); it != TCPFlags.end(); it++){
-		std::cout.flags(std::ios::right);
-        std::cout << it->first;
-        std::cout.flags(std::ios::left);
-		std::cout << "\t" << it->second << std::endl;
-	}
+    printStat(TCPFlags);
 	std::cout << std::endl << "--- TCP options ---" << std::endl <<std::endl;
-	for (it = TCPOptions.begin(); it != TCPOptions.end(); it++){
-		std::cout.flags(std::ios::right);
-        std::cout << it->first;
-        std::cout.flags(std::ios::left);
-		std::cout << "\t" << it->second << std::endl;
-	}
+    printStat(TCPOptions);
+
 	std::cout << std::endl << "=== Transport layer: UDP ===" << std::endl << std::endl;
 	std::cout << "--- Source UDP ports ---" << std::endl << std::endl;
-	for (it = sourceUDPPorts.begin(); it != sourceUDPPorts.end(); it++){
-		std::cout.flags(std::ios::right);
-        std::cout << it->first;
-        std::cout.flags(std::ios::left);
-		std::cout << "\t" << it->second << std::endl;
-	}
+    printStat(sourceUDPPorts);
 	std::cout << std::endl << "--- Destination UDP ports ---" << std::endl <<std::endl;
-	for (it = destUDPPorts.begin(); it != destUDPPorts.end(); it++){
-		std::cout.flags(std::ios::right);
-        std::cout << it->first;
-        std::cout.flags(std::ios::left);
-		std::cout << "\t" << it->second << std::endl;
-	}
+    printStat(destUDPPorts);
 
 	std::cout << std::endl << "=== Transport layer: ICMP ===" << std::endl << std::endl;
 	std::cout << "--- ICMP types ---" << std::endl <<std::endl;
-	for (it = icmpTypes.begin(); it != icmpTypes.end(); it++){
-		std::cout.flags(std::ios::right);
-        std::cout << it->first;
-        std::cout.flags(std::ios::left);
-		std::cout << "\t" << it->second << std::endl;
-	}
+    printStat(icmpTypes);
 	std::cout << std::endl << "--- ICMP codes ---" << std::endl <<std::endl;
-	for (it = icmpCodes.begin(); it != icmpCodes.end(); it++){
-		std::cout.flags(std::ios::right);
-        std::cout << it->first;
-        std::cout.flags(std::ios::left);
-		std::cout << "\t" << it->second << std::endl;
-	}
+    printStat(icmpCodes);
 	return;
+}
+void printStat(STRU_STAT stat){
+    IT_STRU_STAT it;
+    if (0 != stat.size()){
+        for (it = stat.begin(); it != stat.end(); it++){
+            std::cout << it->first;
+            std::cout.width(15);
+            std::cout << "\t" << it->second << std::endl;
+        }
+    }
+    else
+        std::cout << "(no results)" << std::endl;
+    return;
 }
 /**
  * usage(FILE * file) -> void
