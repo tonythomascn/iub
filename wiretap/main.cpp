@@ -26,20 +26,17 @@
 #include <netinet/udp.h>
 #include <netinet/ip_icmp.h>
 
-#define MAX_FILE_NAME 1024
-#define IP_HDR_SIZE 14
-#define ARP_HDR_SIZE 14
-
+#define MAX_FILE_NAME 1024//max file name
+//struct to store ip/mac and its number
 typedef std::map<u_char*, int> STRU_STAT;
 typedef STRU_STAT::iterator IT_STRU_STAT;
 
 //=== summary ===
-int iFirstPacketFlag = 0;
+int iFirstPacketFlag = 0;//first time get the first packet time
 timeval firstPacketTime;//first packet capture time
-int iLastPacketFlag = 0;
 timeval lastPacketTime;//last packet capture time
-int iLargestPacket = 0;//largest packet size
-int iSmallestPacket = 0;//smallest packet size
+unsigned iLargestPacket = 0;//largest packet size
+unsigned iSmallestPacket = 0;//smallest packet size
 long lPktNumber = 0;//total packet number
 unsigned long long ullTotalPktSize = 0;//total packet size
 
@@ -87,6 +84,8 @@ void destory();
 void destroyStruct(STRU_STAT stat);
 //check ip exist or not
 void checkIpExsit(STRU_STAT &statIp, u_char * Ip);
+//check the TCP Options
+void checkTCPOptions(const u_char * tcp_options, u_int16_t length);
 //analyze each packet
 void callback(u_char *arg_array, const struct pcap_pkthdr *h, const u_char *bytes);
 
@@ -114,43 +113,39 @@ int main (int argc, char **argv) {
 		std::cout << "pcap file was not saved from Ethernet!" << std::endl;;
 		exit(EXIT_FAILURE);
 	}
-    //pcap_pkthdr * pcap_pktheader;
-	//get the stat info from the pcap file
-	pcap_stat * pcapstat;
-	if (-1 == pcap_stats(pcap, pcapstat)){
-	    std::cout << "pcap file doesn’t support packet statistics!" << std::endl;;
-	}
-    else
-        lPktNumber = pcapstat->ps_recv;
 
-    initTCPFlags();
+	initTCPFlags();
 	pcap_loop(pcap, 0, callback, NULL);
 	pcap_close(pcap);
-	//std::cout<< "pcap file parse finished!\n";
 	printStat();
 	exit(EXIT_SUCCESS);
 }
 void initTCPFlags(){
-    u_char msg[5] = "\0";
-    memset(msg, 0x00, 5);
-    memcpy(msg, "FIN", sizeof("FIN"));
-    checkIpExsit(TCPFlags, msg);
-    memset(msg, 0x00, 5);
-    memcpy(msg, "ACK", sizeof("ACK"));
-    checkIpExsit(TCPFlags, msg);
-    memset(msg, 0x00, 5);
-    memcpy(msg, "SYN", sizeof("SYN"));
-    checkIpExsit(TCPFlags, msg);
-    memset(msg, 0x00, 5);
-    memcpy(msg, "RST", sizeof("RST"));
-    checkIpExsit(TCPFlags, msg);
-    memset(msg, 0x00, 5);
-    memcpy(msg, "PUSH", sizeof("PUSH"));
-    checkIpExsit(TCPFlags, msg);
-    memset(msg, 0x00, 5);
-    memcpy(msg, "URG", sizeof("URG"));
-    checkIpExsit(TCPFlags, msg);
-    return;
+	u_char *msg = (u_char *)malloc(sizeof(u_char *) * MAX_FILE_NAME);
+	memset(msg, 0x00, MAX_FILE_NAME);
+	memcpy(msg, "FIN", sizeof("FIN"));
+	TCPFlags.insert(std::make_pair(msg, 0));
+	msg = (u_char *)malloc(sizeof(u_char *) * MAX_FILE_NAME);
+	memset(msg, 0x00, MAX_FILE_NAME);
+	memcpy(msg, "ACK", sizeof("ACK"));
+	TCPFlags.insert(std::make_pair(msg, 0));
+	msg = (u_char *)malloc(sizeof(u_char *) * MAX_FILE_NAME);
+	memset(msg, 0x00, MAX_FILE_NAME);
+	memcpy(msg, "SYN", sizeof("SYN"));
+	TCPFlags.insert(std::make_pair(msg, 0));
+	msg = (u_char *)malloc(sizeof(u_char *) * MAX_FILE_NAME);
+	memset(msg, 0x00, MAX_FILE_NAME);
+	memcpy(msg, "RST", sizeof("RST"));
+	TCPFlags.insert(std::make_pair(msg, 0));
+	msg = (u_char *)malloc(sizeof(u_char *) * MAX_FILE_NAME);
+	memset(msg, 0x00, MAX_FILE_NAME);
+	memcpy(msg, "PUSH", sizeof("PUSH"));
+	TCPFlags.insert(std::make_pair(msg, 0));
+	msg = (u_char *)malloc(sizeof(u_char *) * MAX_FILE_NAME);
+	memset(msg, 0x00, MAX_FILE_NAME);
+	memcpy(msg, "URG", sizeof("URG"));
+	TCPFlags.insert(std::make_pair(msg, 0));
+	return;
 }
 //parse every packet
 void callback(u_char *arg_array, const struct pcap_pkthdr *h, const u_char *bytes){
@@ -162,33 +157,20 @@ void callback(u_char *arg_array, const struct pcap_pkthdr *h, const u_char *byte
 		iFirstPacketFlag = 1;
 	}
 	//check it's the largest or smallest
-    if (0 == lPktNumber)
-        iLargestPacket = iSmallestPacket = length;
-    if (length > iLargestPacket){
-        iLargestPacket = length;
-    }
-    else if (length < iSmallestPacket){
+	if (0 == lPktNumber)
+		iLargestPacket = iSmallestPacket = length;
+	if (length > iLargestPacket){
+		iLargestPacket = length;
+	}
+	else if (length < iSmallestPacket){
 		iSmallestPacket = length;
-    }
+	}
 	lPktNumber++;
 	ullTotalPktSize += length;
 
 	ether_header * ether = (ether_header *)bytes;
 	u_char msg[MAX_FILE_NAME] =  "\0";
 	char msg2[MAX_FILE_NAME] = "\0";
-	/*
-	   ether_addr etheraddr;
-	   memcpy(etheraddr.ether_addr_octet, ether->ether_shost, ETHER_ADDR_LEN*sizeof(u_char));
-	   memset(msg, 0x00, MAX_FILE_NAME);
-	   memcpy(msg, ether_ntoa(&etheraddr), strlen(ether_ntoa(&etheraddr)));
-	   checkIpExsit(sourceEthernet, msg);
-	//std::cout << msg << std::endl;
-
-	memcpy(etheraddr.ether_addr_octet, ether->ether_dhost, ETHER_ADDR_LEN*sizeof(u_char));
-	memset(msg, 0x00, MAX_FILE_NAME);
-	memcpy(msg, ether_ntoa(&etheraddr), strlen(ether_ntoa(&etheraddr)));
-	checkIpExsit(destEthernet, msg);
-	 */
 	//datalink layer record its source and destination
 	memset(msg2, 0x00, MAX_FILE_NAME);
 	for (int i = 0; i < ETHER_ADDR_LEN - 1; i++) {
@@ -208,8 +190,7 @@ void callback(u_char *arg_array, const struct pcap_pkthdr *h, const u_char *byte
 	memcpy(msg, msg2, strlen(msg2));
 	checkIpExsit(destEthernet, msg);
 
-
-	//if (ETH_P_IP == ntohs(e->h_proto)){
+    //check the protocol of the ethernet packet
 	if (ETHERTYPE_IP == ntohs(ether->ether_type)){
 		//ip
 		memset(msg, 0x00, MAX_FILE_NAME);
@@ -233,94 +214,93 @@ void callback(u_char *arg_array, const struct pcap_pkthdr *h, const u_char *byte
 			checkIpExsit(transportProtocols, msg);
 			//tcp source ports
 			tcphdr * tcp = (tcphdr *)(bytes + ETHER_HDR_LEN + sizeof(ip));
-			memset(msg, 0x00, MAX_FILE_NAME);
-            sprintf(msg2, "%u", ntohs(tcp->source));
+			memset(msg2, 0x00, MAX_FILE_NAME);
+			sprintf(msg2, "%u", ntohs(tcp->source));
 			//sprintf(msg2, "%u", tcp->th_sport);
 			memset(msg, 0x00, MAX_FILE_NAME);
 			memcpy(msg, msg2, strlen(msg2));
 			checkIpExsit(sourceTCPPorts, msg);
-            //tcp dest ports
-			memset(msg, 0x00, MAX_FILE_NAME);
-            sprintf(msg2, "%u", ntohs(tcp->dest));
+			//tcp dest ports
+			memset(msg2, 0x00, MAX_FILE_NAME);
+			sprintf(msg2, "%u", ntohs(tcp->dest));
 			//sprintf(msg2, "%u", tcp->th_dport);
 			memset(msg, 0x00, MAX_FILE_NAME);
 			memcpy(msg, msg2, strlen(msg2));
 			checkIpExsit(destTCPPorts, msg);
 			memset(msg, 0x00, MAX_FILE_NAME);
-            
-            //TODO flag is not correct tcp flags
-            if (1 == tcp->fin)
-                checkIpExsit(TCPFlags, (u_char*)"FIN");
-            else if (1 == tcp->syn)
-                checkIpExsit(TCPFlags, (u_char*)"SYN");
-            else if (1 == tcp->rst)
-                checkIpExsit(TCPFlags, (u_char*)"RST");
-            else if (1 == tcp->psh)
-                checkIpExsit(TCPFlags, (u_char*)"PUSH");
-            else if (1 == tcp->ack)
-                checkIpExsit(TCPFlags, (u_char*)"ACK");
-            else if (1 == tcp->urg)
-                checkIpExsit(TCPFlags, (u_char*)"URG");
-            /*
-			if ((tcp->th_flags & TH_FIN) == TH_FIN)
+
+			//flag is not correct tcp flags
+			if (1 == tcp->fin)
 				checkIpExsit(TCPFlags, (u_char*)"FIN");
-			else if ((tcp->th_flags & TH_SYN) == TH_SYN)
+			if (1 == tcp->syn)
 				checkIpExsit(TCPFlags, (u_char*)"SYN");
-			else if ((tcp->th_flags & TH_RST) == TH_RST)
+			if (1 == tcp->rst)
 				checkIpExsit(TCPFlags, (u_char*)"RST");
-			else if ((tcp->th_flags & TH_PUSH) == TH_PUSH)
+			if (1 == tcp->psh)
 				checkIpExsit(TCPFlags, (u_char*)"PUSH");
-			else if ((tcp->th_flags & TH_ACK) == TH_ACK)
+			if (1 == tcp->ack)
 				checkIpExsit(TCPFlags, (u_char*)"ACK");
-			else if ((tcp->th_flags & TH_URG) == TH_URG)
+			if (1 == tcp->urg)
 				checkIpExsit(TCPFlags, (u_char*)"URG");
-			else if ((tcp->th_flags & TH_ECE) == TH_ECE)
-				checkIpExsit(TCPFlags, (u_char*)"ECE");
-			else if ((tcp->th_flags & TH_CWR) == TH_CWR)
-				checkIpExsit(TCPFlags, (u_char*)"CWR");
-			else
-				std::cout << "error tcp flags:" << tcp->th_flags << std::endl;
-            */
-            
-            // TODO tcp options
-            
+			/*
+			   if (tcp->th_flags & TH_FIN)
+			   checkIpExsit(TCPFlags, (u_char*)"FIN");
+			   if (tcp->th_flags & TH_SYN)
+			   checkIpExsit(TCPFlags, (u_char*)"SYN");
+			   if (tcp->th_flags & TH_RST)
+			   checkIpExsit(TCPFlags, (u_char*)"RST");
+			   if ((tcp->th_flags & TH_PUSH))
+			   checkIpExsit(TCPFlags, (u_char*)"PUSH");
+			   if (tcp->th_flags & TH_ACK)
+			   checkIpExsit(TCPFlags, (u_char*)"ACK");
+			   if ((tcp->th_flags & TH_URG))
+			   checkIpExsit(TCPFlags, (u_char*)"URG");
+			   if ((tcp->th_flags & TH_ECE))
+			   checkIpExsit(TCPFlags, (u_char*)"ECE");
+			   if ((tcp->th_flags & TH_CWR))
+			   checkIpExsit(TCPFlags, (u_char*)"CWR");
+			 */
+			if (tcp->doff * 4 - sizeof(tcphdr) > 0){
+				// tcp options
+				checkTCPOptions(bytes + ETHER_HDR_LEN + sizeof(ip) + sizeof(tcphdr), tcp->doff * 4 - sizeof(tcphdr));
+			}
 		}
 		else if (IPPROTO_UDP == iphdr->ip_p){
 			memset(msg, 0x00, MAX_FILE_NAME);
 			memcpy(msg, "UDP", sizeof("UDP"));
 			checkIpExsit(transportProtocols, msg);
-            //tcp source ports
-            udphdr * udp = (udphdr *)(bytes + ETHER_HDR_LEN + sizeof(ip));
-            memset(msg, 0x00, MAX_FILE_NAME);
-            sprintf(msg2, "%u", ntohs(udp->source));
-            //sprintf(msg2, "%u", udp->uh_sport);
-            memset(msg, 0x00, MAX_FILE_NAME);
-            memcpy(msg, msg2, strlen(msg2));
-            checkIpExsit(sourceUDPPorts, msg);
-            //tcp dest ports
-            memset(msg, 0x00, MAX_FILE_NAME);
-            sprintf(msg2, "%u", ntohs(udp->dest));
-            //sprintf(msg2, "%u", udp->uh_dport);
-            memset(msg, 0x00, MAX_FILE_NAME);
-            memcpy(msg, msg2, strlen(msg2));
-            checkIpExsit(destUDPPorts, msg);
-            memset(msg, 0x00, MAX_FILE_NAME);
+			//tcp source ports
+			udphdr * udp = (udphdr *)(bytes + ETHER_HDR_LEN + sizeof(ip));
+			memset(msg2, 0x00, MAX_FILE_NAME);
+			sprintf(msg2, "%u", ntohs(udp->source));
+			//sprintf(msg2, "%u", udp->uh_sport);
+			memset(msg, 0x00, MAX_FILE_NAME);
+			memcpy(msg, msg2, strlen(msg2));
+			checkIpExsit(sourceUDPPorts, msg);
+			//tcp dest ports
+			memset(msg2, 0x00, MAX_FILE_NAME);
+			sprintf(msg2, "%u", ntohs(udp->dest));
+			//sprintf(msg2, "%u", udp->uh_dport);
+			memset(msg, 0x00, MAX_FILE_NAME);
+			memcpy(msg, msg2, strlen(msg2));
+			checkIpExsit(destUDPPorts, msg);
+			memset(msg, 0x00, MAX_FILE_NAME);
 		}
 		else if (IPPROTO_ICMP == iphdr->ip_p){
 			memset(msg, 0x00, MAX_FILE_NAME);
 			memcpy(msg, "ICMP", sizeof("ICMP"));
 			checkIpExsit(transportProtocols, msg);
-            icmp * icmphdr = (icmp *)(bytes + ETHER_HDR_LEN + sizeof(ip));
-            memset(msg2, 0x00, MAX_FILE_NAME);
-            sprintf(msg2, "%u", icmphdr->icmp_type);
-            memset(msg, 0x00, MAX_FILE_NAME);
-            memcpy(msg, msg2, strlen(msg2));
-            checkIpExsit(icmpTypes, msg);
-            memset(msg2, 0x00, MAX_FILE_NAME);
-            sprintf(msg2, "%u", icmphdr->icmp_code);
-            memset(msg, 0x00, MAX_FILE_NAME);
-            memcpy(msg, msg2, strlen(msg2));
-            checkIpExsit(icmpCodes, msg);
+			icmp * icmphdr = (icmp *)(bytes + ETHER_HDR_LEN + sizeof(ip));
+			memset(msg2, 0x00, MAX_FILE_NAME);
+			sprintf(msg2, "%u", icmphdr->icmp_type);
+			memset(msg, 0x00, MAX_FILE_NAME);
+			memcpy(msg, msg2, strlen(msg2));
+			checkIpExsit(icmpTypes, msg);
+			memset(msg2, 0x00, MAX_FILE_NAME);
+			sprintf(msg2, "%u", icmphdr->icmp_code);
+			memset(msg, 0x00, MAX_FILE_NAME);
+			memcpy(msg, msg2, strlen(msg2));
+			checkIpExsit(icmpCodes, msg);
 		}
 		else{
 			memset(msg2, 0x00, MAX_FILE_NAME);
@@ -352,6 +332,7 @@ void callback(u_char *arg_array, const struct pcap_pkthdr *h, const u_char *byte
 		checkIpExsit(arpParticipants, msg);
 	}
 	else{
+        //other protocols
 		memset(msg2, 0x00, MAX_FILE_NAME);
 		sprintf(msg2, "%d (0x%02x)", ntohs(ether->ether_type), ntohs(ether->ether_type));
 		memset(msg, 0x00, MAX_FILE_NAME);
@@ -359,6 +340,33 @@ void callback(u_char *arg_array, const struct pcap_pkthdr *h, const u_char *byte
 		checkIpExsit(networkProtocols, msg);
 	}
 	return;
+}
+void checkTCPOptions(const u_char * tcp_options, u_int16_t length){
+	// tcp options
+	u_int option = 0;
+	u_int datalength = 0;
+	u_char msg[MAX_FILE_NAME] = "\0";
+	char msg2[MAX_FILE_NAME] = "\0";
+	for (int i = 0; i < length; ){
+        //record every option
+		option = tcp_options[i++];
+		memset(msg2, 0x00, MAX_FILE_NAME);
+		sprintf(msg2, "%d (0x%u)", option, option);
+		memset(msg, 0x00, MAX_FILE_NAME);
+		memcpy(msg, msg2, strlen(msg2));
+		checkIpExsit(TCPOptions, msg);
+        if (TCPOPT_EOL == option){
+            std::cout << "TCPOPT_EOL" << std::endl;
+            return;
+        }
+        if (TCPOPT_NOP != option){
+            //if not TCPOPT_NOP, other options have
+            //their one octet kind field, followed by a one octet length field,
+            //followed by length-2 octets of option data.
+            datalength = tcp_options[i++];
+            i += datalength - 2;
+        }
+	}
 }
 void destory(){
 	destroyStruct(sourceEthernet);
@@ -391,7 +399,6 @@ void checkIpExsit(STRU_STAT &statIp, u_char * Ip){
 	for (; it != statIp.end(); it++){
 		if (0 == compare(Ip, it->first, strlen((char*)Ip))){
 			//find the same one
-            //iflag = 1;
 			break;
 		}
 	}
@@ -402,7 +409,7 @@ void checkIpExsit(STRU_STAT &statIp, u_char * Ip){
 		u_char *msg =  (u_char *)malloc(sizeof(u_char *) * MAX_FILE_NAME);
 		memset(msg, 0x00, MAX_FILE_NAME);
 		memcpy(msg, Ip, strlen((char*)Ip));
-        if (0 == strcmp(msg,"URG")) std::cout << msg << std::endl;
+		//if (0 == strcmp(msg,"URG")) std::cout << msg << std::endl;
 		statIp.insert(std::pair<u_char*, int>(msg, 1));
 	}
 	return;
@@ -417,77 +424,78 @@ int compare(unsigned char *a, unsigned char *b, ssize_t size) {
 
 void printStat(){
 	IT_STRU_STAT it;
-    time_t t = (time_t)firstPacketTime.tv_sec;
-    tm capturetime;
-    char buf[80] = "\0";
-    strftime(buf,80,"%F %H:%M:%S %Z",localtime_r(&t, &capturetime));
+	time_t t = (time_t)firstPacketTime.tv_sec;
+	tm capturetime;
+	char buf[80] = "\0";
+	strftime(buf,80,"%F %H:%M:%S %Z",localtime_r(&t, &capturetime));
 	std::cout << "=== Packet capture summary ===" << std::endl << std::endl <<
 		"Start date:" << buf <<std::endl <<
 		"Duration:" << lastPacketTime.tv_sec - firstPacketTime.tv_sec << " seconds" <<std::endl <<
 		"# Packets:" << lPktNumber << std::endl <<
 		"Smallest:" << iSmallestPacket << std::endl <<
 		"Largest:" << iLargestPacket << std::endl <<
-    "Average:" << std::setprecision(4) << ullTotalPktSize / (double)lPktNumber << std::endl << std::endl;
+		"Average:" << std::setprecision(4) << ullTotalPktSize / (double)lPktNumber << std::endl << std::endl;
 
 	std::cout << "=== Link layer ===" << std::endl << std::endl;
 	std::cout << "--- Source ethernet addresses ---" << std::endl << std::endl;
-    printStat(sourceEthernet);
+	printStat(sourceEthernet);
 
 	std::cout << std::endl << std::endl << "--- Destination ethernet addresses ---" << std::endl << std::endl;
-    printStat(destEthernet);
-    
+	printStat(destEthernet);
+
 	std::cout << std::endl << "=== Network layer ===" << std::endl << std::endl;
 	std::cout <<"--- Network layer protocols ---" << std::endl;
-    printStat(networkProtocols);
+	printStat(networkProtocols);
 
 	std::cout << std::endl << "--- Source IP addresses ---" << std::endl << std::endl;
-    printStat(sourceIp);
+	printStat(sourceIp);
 
 	std::cout << std::endl << "--- Destination IP addresses ---" << std::endl <<std::endl;
-    printStat(destIp);
+	printStat(destIp);
 
 	std::cout << std::endl << "--- Unique ARP participants ---" << std::endl <<std::endl;
-    printStat(arpParticipants);
+	printStat(arpParticipants);
 
 	std::cout << std::endl << "=== Transport layer ===" << std::endl << std::endl;
 	std::cout <<"--- Transport layer protocols ---" << std::endl << std::endl;
-    printStat(transportProtocols);
+	printStat(transportProtocols);
 
 	std::cout << std::endl << "=== Transport layer: TCP ===" << std::endl << std::endl;
 	std::cout << "--- Source TCP ports ---" << std::endl << std::endl;
-    printStat(sourceTCPPorts);
+	printStat(sourceTCPPorts);
 	std::cout << std::endl << "--- Destination TCP ports ---" << std::endl <<std::endl;
-    printStat(destTCPPorts);
+	printStat(destTCPPorts);
 	std::cout << std::endl << "--- TCP flags ---" << std::endl <<std::endl;
-    printStat(TCPFlags);
+	printStat(TCPFlags);
 	std::cout << std::endl << "--- TCP options ---" << std::endl <<std::endl;
-    printStat(TCPOptions);
+	printStat(TCPOptions);
 
 	std::cout << std::endl << "=== Transport layer: UDP ===" << std::endl << std::endl;
 	std::cout << "--- Source UDP ports ---" << std::endl << std::endl;
-    printStat(sourceUDPPorts);
+	printStat(sourceUDPPorts);
 	std::cout << std::endl << "--- Destination UDP ports ---" << std::endl <<std::endl;
-    printStat(destUDPPorts);
+	printStat(destUDPPorts);
 
 	std::cout << std::endl << "=== Transport layer: ICMP ===" << std::endl << std::endl;
 	std::cout << "--- ICMP types ---" << std::endl <<std::endl;
-    printStat(icmpTypes);
+	printStat(icmpTypes);
 	std::cout << std::endl << "--- ICMP codes ---" << std::endl <<std::endl;
-    printStat(icmpCodes);
+	printStat(icmpCodes);
 	return;
 }
 void printStat(STRU_STAT stat){
-    IT_STRU_STAT it;
-    if (0 != stat.size()){
-        for (it = stat.begin(); it != stat.end(); it++){
-            std::cout << it->first;
-            std::cout.width(15);
-            std::cout << "\t" << it->second << std::endl;
-        }
-    }
-    else
-        std::cout << "(no results)" << std::endl;
-    return;
+	IT_STRU_STAT it;
+	if (0 != stat.size()){
+		for (it = stat.begin(); it != stat.end(); it++){
+			std::cout.width(10);
+			std::cout << it->first;
+			//std::cout.width(10);
+			std::cout << "\t" << it->second << std::endl;
+		}
+	}
+	else
+		std::cout << "(no results)" << std::endl;
+	return;
 }
 /**
  * usage(FILE * file) -> void
@@ -535,13 +543,9 @@ std::string parse_args(int argc,  char * argv[]){
 			case 'h':
 				usage(stdout);
 				break;
-
 			case 'o':
 				memcpy(file_name, optarg, strlen(optarg));
-				//if (strcmp)
-				//printf ("option o with value '%s'\n", file_name);
 				break;
-
 			default:
 				usage(stdout);
 				break;
