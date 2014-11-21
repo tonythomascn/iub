@@ -10,7 +10,7 @@
 #define portscanner_utils_h
 #include <list>
 #include <string>
-
+#include <map>
 /*Maximum file name size*/
 #define FILE_NAME_MAX 1024
 //maximum file size
@@ -21,9 +21,11 @@
 // defined in bt_client
 extern bool VERBOSE;
 
+//port scanner arguments structure
 typedef struct _ps_args_t{
     //ip list
     std::list<std::string> ipList;
+    std::map<std::string, int> ipMap;
     //ip prefix
     std::string subnetIp;
     int prefixMask;
@@ -48,6 +50,37 @@ typedef struct _ps_args_t{
         ipListFile = "\0";
     }
 }ps_args_t;
+
+//port scanner task structure
+typedef struct _ps_task_t{
+    //ip
+    std::string ip;
+    //port
+    int port;
+    //flag
+    std::string flag;
+    //service name (if applicable)
+    std::string serviceName;
+    //open/filtered/close
+    std::string result;
+    
+    _ps_task_t():
+    ip("\0"),
+    port(0),
+    flag("\0"),
+    serviceName("\0"),
+    result("\0"){
+        
+    }
+    ~_ps_task_t(){
+        ip = "\0";
+        port = 0;
+        flag = "\0";
+        serviceName = "\0";
+        result = "\0";
+    }
+}ps_task_t;
+
 //command line usgage
 void usage(FILE * file);
 //parse arguments
@@ -66,6 +99,8 @@ void parse_ports(std::list<int> &portList, std::string str);
 void parse_range_ports(std::list<int> &portList, std::string str);
 //parse prefix argument
 void parse_prefix(std::list<std::string> &ipList, std::string str);
-void parse_prefix(std::string &subnetIp, int prefixMask, std::string str);
+void parse_prefix(std::string &subnetIp, int &prefixMask, std::string str);
+
+//build task queue from ps_args_t
 
 #endif

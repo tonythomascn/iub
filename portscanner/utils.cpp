@@ -97,12 +97,15 @@ void parse_args(ps_args_t * ps_args, int argc,  char * argv[]){
 			case 0:
 				switch (option_index) {
 					case 1:
+                        //ports
 						parse_ports(ps_args->portList, optarg);
 						break;
 					case 3:
+                        //ip prefix
 						parse_prefix(ps_args->ipList, optarg);
 						break;
 					case 5:
+                        //speedup
 						nthread = atoi(optarg);
 						if (0 < nthread)
 							ps_args->nthread = nthread;
@@ -112,8 +115,7 @@ void parse_args(ps_args_t * ps_args, int argc,  char * argv[]){
 						}
 						break;
 					case 6:
-                        //argv[optind]-argv[argc-1]
-                        //std::cout << argv[optind - 1]  << argv[argc-1] <<std::endl;
+                        //flags
                         for (int i = optind - 1; i <= argc - 1; i++){
                             if ('-' == argv[i][0]) break;
                             ps_args->flagList.push_back(argv[i]);
@@ -128,9 +130,11 @@ void parse_args(ps_args_t * ps_args, int argc,  char * argv[]){
 				usage(stdout);
 				break;
 			case 'i':
+                //ip list
 				ps_args->ipList.push_back(optarg);
 				break;
 			case 'f':
+                //ip list file
 				ps_args->ipListFile = optarg;
 				break;
 			case 'v':
@@ -207,11 +211,12 @@ void parse_ports(std::list<int> &portList, std::string str){
     if ("\0" == str){
         return;
     }
-    
+    //if there is just one port
     if (std::string::npos == str.find(",") && std::string::npos == str.find("-")){
         portList.push_back(atoi(str.c_str()));
     }
     else if (std::string::npos != str.find(",")){
+        //then parse ports are separated by comma
         size_t pos = str.find_first_of(",");
         std::string tmp = "\0";
         
@@ -231,15 +236,18 @@ void parse_ports(std::list<int> &portList, std::string str){
             //std::cout << str << " " << pos << " "<<tmp <<std::endl;
         }
     }
+    //parse ports separated by range
     if (std::string::npos != str.find("-")){
         parse_range_ports(portList, str);
     }
 }
+
 void parse_range_ports(std::list<int> &portList, std::string str){
-    if ("\0" == str || "-" == str){
+    //if empty, do nothing
+    if ("\0" == str || "-" == str)
         return;
-    }
     else{
+        //parse the begin and end of the range, then add every port between
         std::string strfirst = str.substr(0, str.find_first_of("-"));
         std::string strlast = str.substr(str.find_first_of("-") + 1, str.length() - str.find_first_of("-"));
         if ("\0" == strfirst && "\0" != strlast)
@@ -252,7 +260,7 @@ void parse_range_ports(std::list<int> &portList, std::string str){
         }
     }
 }
-void parse_prefix(std::string &subnetIp, int prefixMask, std::string str){
+void parse_prefix(std::string &subnetIp, int &prefixMask, std::string str){
     if ("\0" == str)
         return;
     else{
@@ -264,6 +272,7 @@ void parse_prefix(std::string &subnetIp, int prefixMask, std::string str){
         prefixMask = atoi(str.substr(str.find("//"), str.length() - str.find("//")).c_str());
     }
 }
+
 void parse_prefix(std::list<std::string> &ipList, std::string str){
     
 }

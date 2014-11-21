@@ -29,7 +29,7 @@ CBaseThread::~CBaseThread()
 {
     if(0 != m_hThread)
     {
-        fprintf(stderr, "ERROR: thread --%s-- was not terminated %s,%s,%d\n", m_ThreadName.c_str(), __FILE__,__PRETTY_FUNCTION__,__LINE__);
+        fprintf(stderr, "ERROR: thread -- %s -- was not terminated %s,%s,%d\n", m_ThreadName.c_str(), __FILE__,__PRETTY_FUNCTION__,__LINE__);
     }
 }
 
@@ -110,12 +110,8 @@ void * CBaseThread::ThreadRuntimeFunc(void *pParams)
     //get the thread id
     This->m_tid = syscall(SYS_gettid);
 
-    for(;;)
-    {
-        //subclass's thread function
-            This->OnBaseThreadProc();
-            break;
-    }
+    //subclass's thread function
+    This->OnBaseThreadProc();
     
     This->m_FlagRunning= false;
     This->m_tid = 0;
