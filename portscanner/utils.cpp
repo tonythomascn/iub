@@ -11,11 +11,10 @@
 #include <stdlib.h>
 #include <getopt.h>
 #include <iostream>
-#include <vector>
 #include <sstream>
 #include <stdarg.h>
 #include <string.h>
-
+#include <math.h>
 bool printMSG(std::string msg) {
     if (VERBOSE) {
         std::cout << msg << std::endl;
@@ -102,7 +101,10 @@ void parse_args(ps_args_t * ps_args, int argc,  char * argv[]){
 						break;
 					case 3:
                         //ip prefix
-						parse_prefix(ps_args->ipList, optarg);
+                        if (NULL != optarg)
+                            parse_prefix(ps_args->subnetIp, ps_args->prefixMask, optarg);
+                        if ("" != ps_args->subnetIp && 0 != ps_args->prefixMask)
+                            parse_prefix(ps_args->ipList, ps_args->subnetIp, ps_args->prefixMask);
 						break;
 					case 5:
                         //speedup
@@ -264,16 +266,51 @@ void parse_prefix(std::string &subnetIp, int &prefixMask, std::string str){
     if ("\0" == str)
         return;
     else{
-        if (std::string::npos == str.find("//")){
-            fprintf(stderr,"ERROR: prefix input error, should be <ip\\mask>\n");
+        ssize_t pos = str.find("/");
+        if (std::string::npos == pos){
+            fprintf(stderr,"ERROR: prefix input error, should be <ip/mask>\n");
             return;
         }
-        subnetIp = str.substr(0, str.find("//"));
-        prefixMask = atoi(str.substr(str.find("//"), str.length() - str.find("//")).c_str());
+        subnetIp = str.substr(0, pos);
+        prefixMask = std::stoi(str.substr(pos + 1, str.length() - pos - 1));
     }
 }
 
-void parse_prefix(std::list<std::string> &ipList, std::string str){
-    
+void parse_prefix(std::list<std::string> &ipList, const std::string subnetIp, const int prefixMask){
+    if ("\0" != subnetIp && 0 != prefixMask){
+        ssize_t pos = subnetIp.find_last_of(".");
+        std::string ipprefix = subnetIp.substr(0, pos + 1);
+        int lastdigit = std::stoi(subnetIp.substr(pos + 1, subnetIp.size() - pos - 1));
+        std::stringstream ss;
+        int netmask = (int)pow(2, MAX_NETMASK - prefixMask);
+        for (int i = 0; i < netmask; i++){
+            ss << ipprefix << lastdigit + i;
+            ipList.push_back(ss.str());
+            ss.str("");
+        }
+    }
 }
 
+std::vector<ps_task_t> build_task_queue(ps_args_t ps_args){
+    std::vector<ps_task_t> ps_task_queue;
+    std::list<std::string>::iterator it_ip;
+    std::list<int>::iterator it_port;
+    std::list<std::string>::iterator it_flag;
+    for (it_ip = ps_args.ipList.begin(); it_ip != ps_args.ipList.end(); it_ip++){
+        for (it_port = ps_args.portList.begin(); it_port != ps_args.portList.end(); it_port++){
+            for (it_ip = ps_args.flagList.begin(); it_ip != ps_args.flagList.end(); it_ip++){
+                ps_task_t ps_task;
+                ps_task.ip = *it_ip;
+                ps_task.port = *it_port;
+                ps_task.flag = *it_flag;
+                //port 1-1024 has service name
+                if (ps_task.port > 0 && ps_task.port < 1025){
+                    if ( "" != ServiceName[ps_task.port])
+                        ps_task.serviceName = ServiceName[ps_task.port];
+                }
+                ps_task_queue.push_back(ps_task);
+            }
+        }
+    }
+    return ps_task_queue;
+}
