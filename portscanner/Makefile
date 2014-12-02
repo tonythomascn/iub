@@ -10,7 +10,7 @@ INCLUDE	=
 LDFLAGS =
 LIB	= $(SYSLIBS) -lpthread
 
-FTPCLIENTOBJ	= portScanner.o CFileOperation.o CBaseThread.o utils.o
+FTPCLIENTOBJ	= portScanner.o CFileOperation.o CBaseThread.o CMasterThread.o CWorkerThread.o utils.o
 
 EXECUTABLE	= portScanner
 

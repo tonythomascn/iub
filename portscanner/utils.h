@@ -23,8 +23,7 @@
 
 // control the verbose output
 // defined in bt_client
-extern bool VERBOSE;
-std::string ServiceName[1024] = {"tcpmux",
+static std::string serviceName[1024] = {"tcpmux",
     "compressnet",
     "compressnet",
     "",

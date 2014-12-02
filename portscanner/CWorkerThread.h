@@ -20,7 +20,7 @@ public:
      * @param [in] the pointer to the master thread
      * @param [in] thread name
      */
-    CWorkerThread(CMasterThread * pCMasterThread, const std::string &ThreadName = "Worker_thread");
+    CWorkerThread(CMasterThread * pCMasterThread, const std::string ThreadName);
     ~CWorkerThread();
     
 private:
@@ -31,10 +31,10 @@ private:
     void OnBaseThreadProc();
     
 private:
-    //pointer to the master thread
-    CMasterThread * m_pCMasterThread;
     //current thread name
     std::string m_strThreadName;
+    //pointer to the master thread
+    CMasterThread * m_pCMasterThread;
     //thread runtime flag
     bool m_bRunFlag;
 };

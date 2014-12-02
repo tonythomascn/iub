@@ -10,7 +10,6 @@
 #define __portscanner__CMasterThread__
 
 #include <stdio.h>
-#include <pthread.h>
 #include "CBaseThread.h"
 
 class CWorkerThread;
@@ -59,10 +58,10 @@ private:
 private:
     //worker thread pool
     CWorkerThread ** m_pCWorkerThread;
-    //how many workers need to be created
-    int m_iNWorker;
     //current thread name
     std::string m_strThreadName;
+    //how many workers need to be created
+    int m_iNWorker;
     //mutex to protect the task queue
     pthread_mutex_t m_Mutex;
     //runtime flag

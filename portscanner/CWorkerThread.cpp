@@ -9,7 +9,7 @@
 #include "CWorkerThread.h"
 #include "CMasterThread.h"
 
-CWorkerThread::CWorkerThread(CMasterThread * pCMasterThread, const std::string &ThreadName)
+CWorkerThread::CWorkerThread(CMasterThread * pCMasterThread, const std::string ThreadName)
 :CBaseThread(ThreadName),
 m_strThreadName(ThreadName),
 m_pCMasterThread(pCMasterThread),

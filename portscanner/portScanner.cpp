@@ -16,8 +16,6 @@
 // defined in bt_client
 bool VERBOSE;
 
-void kill_all_workers();
-
 int main(int argc, char * argv[]) {
     //parse arguments
     ps_args_t ps_args;
@@ -48,7 +46,7 @@ int main(int argc, char * argv[]) {
         //build a task queue from the args
         
         //create workers here
-        CMasterThread * pcmasterthread = new CMasterThread(ps_args.nthread);
+        CMasterThread * pcmasterthread = new CMasterThread(ps_args.nthread, "master_thread");
         while (true) {
             //each worker fetches a task from the task queue
             sleep(1);

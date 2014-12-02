@@ -15,6 +15,8 @@
 #include <stdarg.h>
 #include <string.h>
 #include <math.h>
+extern bool VERBOSE;
+
 bool printMSG(std::string msg) {
     if (VERBOSE) {
         std::cout << msg << std::endl;
@@ -266,13 +268,13 @@ void parse_prefix(std::string &subnetIp, int &prefixMask, std::string str){
     if ("\0" == str)
         return;
     else{
-        ssize_t pos = str.find("/");
+        size_t pos = str.find("/");
         if (std::string::npos == pos){
             fprintf(stderr,"ERROR: prefix input error, should be <ip/mask>\n");
             return;
         }
         subnetIp = str.substr(0, pos);
-        prefixMask = std::stoi(str.substr(pos + 1, str.length() - pos - 1));
+        prefixMask = atoi(str.substr(pos + 1, str.length() - pos - 1).c_str());
     }
 }
 
@@ -280,7 +282,7 @@ void parse_prefix(std::list<std::string> &ipList, const std::string subnetIp, co
     if ("\0" != subnetIp && 0 != prefixMask){
         ssize_t pos = subnetIp.find_last_of(".");
         std::string ipprefix = subnetIp.substr(0, pos + 1);
-        int lastdigit = std::stoi(subnetIp.substr(pos + 1, subnetIp.size() - pos - 1));
+        int lastdigit = atoi(subnetIp.substr(pos + 1, subnetIp.size() - pos - 1).c_str());
         std::stringstream ss;
         int netmask = (int)pow(2, MAX_NETMASK - prefixMask);
         for (int i = 0; i < netmask; i++){
@@ -305,8 +307,8 @@ std::vector<ps_task_t> build_task_queue(ps_args_t ps_args){
                 ps_task.flag = *it_flag;
                 //port 1-1024 has service name
                 if (ps_task.port > 0 && ps_task.port < 1025){
-                    if ( "" != ServiceName[ps_task.port])
-                        ps_task.serviceName = ServiceName[ps_task.port];
+                    if ( "" != serviceName[ps_task.port])
+                        ps_task.serviceName = serviceName[ps_task.port];
                 }
                 ps_task_queue.push_back(ps_task);
             }
