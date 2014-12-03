@@ -239,6 +239,8 @@ void parse_ports(std::list<int> &portList, std::string str){
             
             //std::cout << str << " " << pos << " "<<tmp <<std::endl;
         }
+        if (std::string::npos == str.find("-"))
+            parse_ports(portList, str);
     }
     //parse ports separated by range
     if (std::string::npos != str.find("-")){
