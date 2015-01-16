@@ -5,18 +5,22 @@
 //  Created by Tony Liu on 11/4/14.
 //  Copyright (c) 2014 Tony Liu. All rights reserved.
 //
-
+//
 #include <iostream>
 #include <unistd.h>
 #include "utils.h"
 #include "CFileOperation.h"
 #include "CMasterThread.h"
-
+#define NODE_HASH_SIZE 10
 // control the verbose output
 // defined in bt_client
 bool VERBOSE;
 
 int main(int argc, char * argv[]) {
+    int index = 10;
+    for (int i = 0; i < 10; i++)
+        std::cout << (i) % 11 << std::endl;
+    return 0;
     //parse arguments
     ps_args_t ps_args;
     parse_args(&ps_args, argc, argv);
