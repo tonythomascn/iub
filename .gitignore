@@ -26,3 +26,12 @@
 *.exe
 *.out
 *.app
+*.o
+*.log
+*.xcodeproj
+*.pbxproj
+*.xcworkspacedata
+*.xcuserstate
+*.xcscheme
+*.tar
+*.tar.gz
