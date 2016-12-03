@@ -1,6 +1,6 @@
 python loader.py \
  -d /mnt/vol/Antelope_data/sampledata \
- -i 129.114.110.6 -p 27017 \
+ -i 192.168.0.30 -p 27017 \
  -t arrival \
  -t assoc \
  -t event \
