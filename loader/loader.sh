@@ -8,5 +8,5 @@ python loader.py \
  -t site \
  -t sitechan \
  -t snetsta \
- -t wfdisc \
+ -t wfdisc 
  > /dev/null 2>&1 &
